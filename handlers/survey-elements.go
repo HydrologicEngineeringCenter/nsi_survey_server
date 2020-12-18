@@ -1,6 +1,10 @@
 package handlers
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+)
 
 type SurveyElement struct {
 	ID         string `json:"se_id"`
@@ -11,7 +15,7 @@ type SurveyElement struct {
 func GetNextElement() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var result = SurveyElement{ID: "1234", FD_ID: "11357491", Is_control: false}
-		err := nil
+		var err error = nil
 		//set assignment in assignment table.
 		if err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())

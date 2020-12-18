@@ -4,13 +4,13 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/USACE/consequences-api/middleware"
 	"github.com/apex/gateway"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
 
-	"github.com/USACE/consequences-api/handlers"
-	"github.com/USACE/consequences-api/middleware"
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/handlers"
 )
 
 // Config holds all runtime configuration provided via environment variables
@@ -29,10 +29,11 @@ func main() {
 	if err := envconfig.Process("consequences", &cfg); err != nil {
 		log.Fatal(err.Error())
 	}
+	cfg.SkipJWT = true
 	e := echo.New()
 
 	// Public Routes
-	public := e.Group("")
+	//public := e.Group("")
 
 	// Private Routes
 	private := e.Group("")
