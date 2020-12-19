@@ -33,7 +33,7 @@ func main() {
 	e := echo.New()
 
 	// Public Routes
-	//public := e.Group("")
+	public := e.Group("")
 
 	// Private Routes
 	private := e.Group("")
@@ -44,16 +44,10 @@ func main() {
 	}
 
 	// Public Routes
-	// NOTE: ALL GET REQUESTS ARE ALLOWED WITHOUT AUTHENTICATION USING JWTConfig Skipper. See appconfig/jwt.go
+	public.GET("nsi_api/survey_element", handlers.GetNextElement)
 
-	// Next Element
-
-	// Computes
-	// public.GET("consequences/computes", handlers.ListComputes(db))
-	// public.GET("consequences/computes/:compute_id", handlers.GetCompute(db))
-	// public.GET("consequences/computes/:compute_id/result", handlers.GetComputeResult(db))
-	private.GET("nsi_api/survey_element", handlers.GetNextElement())
-	private.POST("nsi_api/survey_result", handlers.PostSurveyResult())
+	// Private Routes
+	private.POST("nsi_api/survey_result", handlers.PostSurveyResult)
 
 	if cfg.LambdaContext {
 		log.Print("starting server; Running On AWS LAMBDA")

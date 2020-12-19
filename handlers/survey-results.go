@@ -11,14 +11,12 @@ type SurveyResult struct {
 	FD_ID string `json:"fd_id"`
 }
 
-func PostSurveyResult() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		var result = SurveyResult{ID: "1234", FD_ID: "11357491"}
-		var err error = nil
-		//set assignment in assignment table.
-		if err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
-		}
-		return c.JSON(http.StatusOK, result)
+func PostSurveyResult(c echo.Context) error {
+	var result = SurveyResult{ID: "1234", FD_ID: "11357491"}
+	var err error = nil
+	//set assignment in assignment table.
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
 	}
+	return c.JSON(http.StatusOK, result)
 }

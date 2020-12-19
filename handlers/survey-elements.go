@@ -12,14 +12,12 @@ type SurveyElement struct {
 	Is_control bool   `json:"is_control"`
 }
 
-func GetNextElement() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		var result = SurveyElement{ID: "1234", FD_ID: "11357491", Is_control: false}
-		var err error = nil
-		//set assignment in assignment table.
-		if err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
-		}
-		return c.JSON(http.StatusOK, result)
+func GetNextElement(c echo.Context) error {
+	var result = SurveyElement{ID: "1234", FD_ID: "11357491", Is_control: false}
+	var err error = nil
+	//set assignment in assignment table.
+	if err != nil {
+		return c.String(http.StatusInternalServerError, err.Error())
 	}
+	return c.JSON(http.StatusOK, result)
 }
