@@ -11,25 +11,26 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/handlers"
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
 )
 
 // Config holds all runtime configuration provided via environment variables
-type Config struct {
-	SkipJWT       bool
-	LambdaContext bool
-	DBUser        string
-	DBPass        string
-	DBName        string
-	DBHost        string
-	DBSSLMode     string
-}
 
 func main() {
-	var cfg Config
+	var cfg models.Config
 	if err := envconfig.Process("consequences", &cfg); err != nil {
 		log.Fatal(err.Error())
 	}
 	cfg.SkipJWT = true
+
+	ss, err := stores.CreateSurveyStore(&cfg)
+	if err != nil {
+		log.Printf("Unable to connect to database: %s", err)
+	}
+
+	surveyHandler := handlers.CreateSurveyHandler(ss)
+
 	e := echo.New()
 
 	// Public Routes
@@ -44,10 +45,10 @@ func main() {
 	}
 
 	// Public Routes
-	public.GET("nsi_api/survey_element", handlers.GetNextElement)
+	public.GET("nsi_api/survey_element", surveyHandler.GetSurvey)
 
 	// Private Routes
-	private.POST("nsi_api/survey_result", handlers.PostSurveyResult)
+	//private.POST("nsi_api/survey_result", handlers.PostSurveyResult)
 
 	if cfg.LambdaContext {
 		log.Print("starting server; Running On AWS LAMBDA")
