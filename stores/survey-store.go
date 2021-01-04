@@ -22,7 +22,7 @@ func CreateSurveyStore(appConfig *models.Config) (*SurveyStore, error) {
 		return nil, err
 	}
 	log.Printf("Connected as %s to database %s:%s/%s", appConfig.Dbuser, appConfig.Dbhost, appConfig.Dbport, appConfig.Dbname)
-	con.SetMaxOpenConns(10)
+	con.SetMaxOpenConns(4)
 
 	ss := SurveyStore{
 		db: con,
@@ -49,7 +49,8 @@ func (ss *SurveyStore) GetAssignmentInfo(userId string) (models.AssignmentInfo, 
 	return ai[0], err
 }
 
-var surveySql string = `select $2 as sa_id, fd_id,x,y,cbfips 
+var surveySql string = `select $2 as sa_id, fd_id,x,y,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,
+                        '' as rsmeans_type, '' as quality, '' as const_type, '' as garage, '' as roof_style 
                         from nsi.nsi where fd_id=(select fd_id from survey_element where id=$1)`
 
 func (ss *SurveyStore) GetStructure(seId int, saId int) (models.SurveyStructure, error) {
@@ -62,32 +63,31 @@ func (ss *SurveyStore) GetStructure(seId int, saId int) (models.SurveyStructure,
 	return s, nil
 }
 
-var assignSurveySql string = `insert into survey_assignment (se_id,assigned_to) values ($1,$2)`
+var assignSurveySql string = `insert into survey_assignment (se_id,assigned_to) values ($1,$2) returning id`
 
 func (ss *SurveyStore) AssignSurvey(userId string, seId int) (int, error) {
-	res, err := ss.db.Exec(assignSurveySql, seId, userId)
+	var saId int
+	err := ss.db.QueryRow(assignSurveySql, seId, userId).Scan(&saId)
 	if err != nil {
 		return -1, err
 	}
-
-	saId, sa_err := res.LastInsertId()
-	if sa_err != nil {
-		return -1, sa_err
-	}
-
 	return int(saId), nil
 }
 
-var insertSurveyStructure string = `insert into survey_structure (sa_id,fd_id,x,y,cbfips) values (:sa_id,:fd_id,:x,:y,:cbfips)`
-var updateAssignment string = `update survey_assignment set completed='true' where sa_id=$1`
+var insertSurveyStructure string = `insert into survey_result 
+									 (sa_id,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,
+									  rsmeans_type,quality,const_type,garage,roof_style) 
+									 values (:sa_id,:fd_id,:x,:y,:cbfips,:occtype,:st_damcat,:found_ht,:num_story,:sqft,:found_type,
+									  :rsmeans_type,:quality,:const_type,:garage,:roof_style)`
+var updateAssignment string = `update survey_assignment set completed='true' where id=$1`
 
 func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
 	err := transaction(ss.db, func(tx *sqlx.Tx) {
 		_, txerr := tx.NamedExec(insertSurveyStructure, survey)
 		if txerr != nil {
-			log.Panicf("Unable to insert survey: %s", txerr)
+			panic(txerr)
 		}
-		tx.MustExec(insertSurveyStructure, survey.SAID)
+		tx.MustExec(updateAssignment, survey.SAID)
 	})
 	return err
 }

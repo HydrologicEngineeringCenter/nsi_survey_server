@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
@@ -23,12 +23,12 @@ func CreateSurveyHandler(ss *stores.SurveyStore) *SurveyHandler {
 }
 
 func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
-	userId := "rr"
+	claims := c.Get("NSIUSER").(models.JwtClaim)
+	userId := claims.Sub
 	assignmentInfo, err := sh.store.GetAssignmentInfo(userId)
 	if err != nil {
 		return err
 	}
-	fmt.Println(assignmentInfo)
 	structure := models.SurveyStructure{}
 	if assignmentInfo.Completed == nil || *assignmentInfo.Completed { //anything other than 'false'
 		nextSurvey := assignmentInfo.NextSurvey
@@ -37,6 +37,7 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 		}
 		saId, err := sh.store.AssignSurvey(userId, nextSurvey)
 		if err != nil {
+			log.Printf("Error assigning Survey: %s", err)
 			return err
 		}
 

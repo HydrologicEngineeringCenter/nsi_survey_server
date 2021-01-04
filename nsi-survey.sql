@@ -26,7 +26,21 @@ create table survey_result(
     id serial not null primary key,
     sa_id int not null,
     fd_id int not null,
-    occ_type varchar(20),
+    X double precision not null,
+    Y double precision not null,
+    cbfips varchar(15),
+    occtype varchar(9),
+    st_damcat varchar(3),
+    found_ht double precision,
+    num_story integer,
+    sqft double precision,
+    found_type varchar(4),
+    rsmeans_type varchar(50),
+    quality varchar(50),
+    const_type varchar(50),
+    garage varchar(50),
+    roof_style varchar(50),
+
     CONSTRAINT fk_survey_assignment
         FOREIGN KEY(sa_id) 
             REFERENCES survey_assignment(id)

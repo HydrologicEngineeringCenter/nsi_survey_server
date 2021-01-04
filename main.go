@@ -4,11 +4,12 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/USACE/consequences-api/middleware"
 	"github.com/apex/gateway"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/auth"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/handlers"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
@@ -29,25 +30,20 @@ func main() {
 	}
 
 	surveyHandler := handlers.CreateSurveyHandler(ss)
+	jwtAuth := auth.Auth{
+		Store: ss,
+	}
+	jwtAuth.LoadVerificationKey(cfg.Ippk)
 
 	e := echo.New()
 
-	// Public Routes
-	public := e.Group("")
-
-	// Private Routes
-	private := e.Group("")
-	if cfg.SkipJWT == true {
-		private.Use(middleware.MockIsLoggedIn)
-	} else {
-		private.Use(middleware.JWT, middleware.IsLoggedIn)
-	}
+	e.Use(jwtAuth.Authorize)
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
 
 	// Public Routes
-	public.GET("nsi_api/survey_element", surveyHandler.GetSurvey)
-
-	// Private Routes
-	//private.POST("nsi_api/survey_result", handlers.PostSurveyResult)
+	e.GET("nsi_api/survey", surveyHandler.GetSurvey)
+	e.POST("nsi_api/survey", surveyHandler.SaveSurvey)
 
 	if cfg.LambdaContext {
 		log.Print("starting server; Running On AWS LAMBDA")
