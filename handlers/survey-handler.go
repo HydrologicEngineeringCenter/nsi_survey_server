@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
@@ -27,22 +28,40 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	structure := models.NsiStructure{}
+	fmt.Println(assignmentInfo)
+	structure := models.SurveyStructure{}
 	if assignmentInfo.Completed == nil || *assignmentInfo.Completed { //anything other than 'false'
 		nextSurvey := assignmentInfo.NextSurvey
 		if assignmentInfo.NextControl < assignmentInfo.NextSurvey {
 			nextSurvey = assignmentInfo.NextControl
 		}
-		structure, err = sh.store.GetStructure(nextSurvey)
+		saId, err := sh.store.AssignSurvey(userId, nextSurvey)
 		if err != nil {
 			return err
 		}
-		err = sh.store.AssignSurvey(userId, nextSurvey)
+
+		structure, err = sh.store.GetStructure(nextSurvey, saId)
 		if err != nil {
 			return err
 		}
+
 	} else {
-		structure, err = sh.store.GetStructure(*assignmentInfo.SE_ID)
+		structure, err = sh.store.GetStructure(*assignmentInfo.SE_ID, *assignmentInfo.SA_ID)
+		if err != nil {
+			return err
+		}
 	}
 	return c.JSON(http.StatusOK, structure)
+}
+
+func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
+	s := models.SurveyStructure{}
+	if err := c.Bind(&s); err != nil {
+		return err
+	}
+	err := sh.store.SaveSurvey(&s)
+	if err != nil {
+		return err
+	}
+	return c.String(http.StatusOK, `{"result":"success"}`)
 }

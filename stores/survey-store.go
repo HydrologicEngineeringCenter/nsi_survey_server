@@ -2,8 +2,11 @@ package stores
 
 import (
 	"fmt"
+	"log"
+	"strconv"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
+	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -13,11 +16,12 @@ type SurveyStore struct {
 
 func CreateSurveyStore(appConfig *models.Config) (*SurveyStore, error) {
 	dburl := fmt.Sprintf("user=%s password=%s host=%s port=%s database=%s sslmode=disable",
-		appConfig.DBUser, appConfig.DBPass, appConfig.DBHost, appConfig.DBPort, appConfig.DBName)
+		appConfig.Dbuser, appConfig.Dbpass, appConfig.Dbhost, appConfig.Dbport, appConfig.Dbname)
 	con, err := sqlx.Connect("pgx", dburl)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Connected as %s to database %s:%s/%s", appConfig.Dbuser, appConfig.Dbhost, appConfig.Dbport, appConfig.Dbname)
 	con.SetMaxOpenConns(10)
 
 	ss := SurveyStore{
@@ -45,20 +49,45 @@ func (ss *SurveyStore) GetAssignmentInfo(userId string) (models.AssignmentInfo, 
 	return ai[0], err
 }
 
-var surveySql string = `select * from nsi.nsi where fd_id=(select fd_id from survey_elements where se_id=$1)`
+var surveySql string = `select $2 as sa_id, fd_id,x,y,cbfips 
+                        from nsi.nsi where fd_id=(select fd_id from survey_element where id=$1)`
 
-func (ss *SurveyStore) GetStructure(seId int) (models.NsiStructure, error) {
-	s := models.NsiStructure{}
-	err := ss.db.Get(&s, surveySql, seId)
+func (ss *SurveyStore) GetStructure(seId int, saId int) (models.SurveyStructure, error) {
+	s := models.SurveyStructure{}
+	err := ss.db.Get(&s, surveySql, seId, strconv.Itoa(saId))
 	if err != nil {
+		log.Printf("Failed to retrieve structure: %s/n", err)
 		return s, err
 	}
 	return s, nil
 }
 
-var surveyAssignInsertSql string = `insert into survey_assignment (se_id,assigned_to) values ($1,$2)`
+var assignSurveySql string = `insert into survey_assignment (se_id,assigned_to) values ($1,$2)`
 
-func (ss *SurveyStore) AssignSurvey(userId string, seId int) error {
-	_, err := ss.db.Exec(surveyAssignInsertSql, seId, userId)
+func (ss *SurveyStore) AssignSurvey(userId string, seId int) (int, error) {
+	res, err := ss.db.Exec(assignSurveySql, seId, userId)
+	if err != nil {
+		return -1, err
+	}
+
+	saId, sa_err := res.LastInsertId()
+	if sa_err != nil {
+		return -1, sa_err
+	}
+
+	return int(saId), nil
+}
+
+var insertSurveyStructure string = `insert into survey_structure (sa_id,fd_id,x,y,cbfips) values (:sa_id,:fd_id,:x,:y,:cbfips)`
+var updateAssignment string = `update survey_assignment set completed='true' where sa_id=$1`
+
+func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
+	err := transaction(ss.db, func(tx *sqlx.Tx) {
+		_, txerr := tx.NamedExec(insertSurveyStructure, survey)
+		if txerr != nil {
+			log.Panicf("Unable to insert survey: %s", txerr)
+		}
+		tx.MustExec(insertSurveyStructure, survey.SAID)
+	})
 	return err
 }

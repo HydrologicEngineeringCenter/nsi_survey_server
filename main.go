@@ -8,7 +8,6 @@ import (
 	"github.com/apex/gateway"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
-	_ "github.com/lib/pq"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/handlers"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
@@ -19,14 +18,14 @@ import (
 
 func main() {
 	var cfg models.Config
-	if err := envconfig.Process("consequences", &cfg); err != nil {
+	if err := envconfig.Process("ns", &cfg); err != nil {
 		log.Fatal(err.Error())
 	}
 	cfg.SkipJWT = true
 
 	ss, err := stores.CreateSurveyStore(&cfg)
 	if err != nil {
-		log.Printf("Unable to connect to database: %s", err)
+		log.Printf("Unable to connect to database during startup: %s", err)
 	}
 
 	surveyHandler := handlers.CreateSurveyHandler(ss)
@@ -54,7 +53,7 @@ func main() {
 		log.Print("starting server; Running On AWS LAMBDA")
 		log.Fatal(gateway.ListenAndServe("localhost:3030", e))
 	} else {
-		log.Print("starting server")
+		log.Print("starting server on port 3031")
 		log.Fatal(http.ListenAndServe("localhost:3031", e))
 	}
 }

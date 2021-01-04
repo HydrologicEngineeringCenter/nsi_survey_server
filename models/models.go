@@ -3,12 +3,12 @@ package models
 type Config struct {
 	SkipJWT       bool
 	LambdaContext bool
-	DBUser        string
-	DBPass        string
-	DBName        string
-	DBHost        string
+	Dbuser        string
+	Dbpass        string
+	Dbname        string
+	Dbhost        string
 	DBSSLMode     string
-	DBPort        string
+	Dbport        string
 }
 
 type AssignmentInfo struct {
@@ -37,6 +37,10 @@ type SurveyResult struct {
 	FD_ID string `json:"fd_id"`
 }
 
-type NsiStructure struct {
-	FDID int `db:"fd_id"`
+type SurveyStructure struct {
+	SAID   int     `db:"sa_id" json:"saId"`
+	FDID   int     `db:"fd_id" json:"fdId"`
+	X      float64 `db:"x" json:"x"`
+	Y      float64 `db:"y" json:"y"`
+	CBfips string  `db:"cbfips" json:"cbfips"`
 }
