@@ -28,6 +28,7 @@ create table survey_result(
     fd_id int not null,
     X double precision not null,
     Y double precision not null,
+    invalid_structure boolean not null,
     cbfips varchar(15),
     occtype varchar(9),
     st_damcat varchar(3),
@@ -46,6 +47,9 @@ create table survey_result(
             REFERENCES survey_assignment(id)
     
 );
+
+CREATE UNIQUE INDEX CONCURRENTLY idx_survey_result_said ON survey_result (sa_id);
+ALTER TABLE survey_result ADD CONSTRAINT unique_sa_id UNIQUE USING INDEX idx_survey_result_said;
 
 --drop table survey_result;
 --drop table survey_assignment;

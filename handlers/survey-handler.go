@@ -32,16 +32,17 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 	structure := models.SurveyStructure{}
 	if assignmentInfo.Completed == nil || *assignmentInfo.Completed { //anything other than 'false'
 		nextSurvey := assignmentInfo.NextSurvey
-		if assignmentInfo.NextControl < assignmentInfo.NextSurvey {
+
+		if assignmentInfo.NextControl != nil && *assignmentInfo.NextControl < *assignmentInfo.NextSurvey {
 			nextSurvey = assignmentInfo.NextControl
 		}
-		saId, err := sh.store.AssignSurvey(userId, nextSurvey)
+		saId, err := sh.store.AssignSurvey(userId, *nextSurvey)
 		if err != nil {
 			log.Printf("Error assigning Survey: %s", err)
 			return err
 		}
 
-		structure, err = sh.store.GetStructure(nextSurvey, saId)
+		structure, err = sh.store.GetStructure(*nextSurvey, saId)
 		if err != nil {
 			return err
 		}

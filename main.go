@@ -42,14 +42,14 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// Public Routes
-	e.GET("nsi_api/survey", surveyHandler.GetSurvey)
-	e.POST("nsi_api/survey", surveyHandler.SaveSurvey)
+	e.GET("nsisapi/survey", surveyHandler.GetSurvey)
+	e.POST("nsisapi/survey", surveyHandler.SaveSurvey)
 
 	if cfg.LambdaContext {
 		log.Print("starting server; Running On AWS LAMBDA")
 		log.Fatal(gateway.ListenAndServe("localhost:3030", e))
 	} else {
 		log.Print("starting server on port 3031")
-		log.Fatal(http.ListenAndServe("localhost:3031", e))
+		log.Fatal(http.ListenAndServe("0.0.0.0:3031", e))
 	}
 }

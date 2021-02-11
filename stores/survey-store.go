@@ -1,9 +1,12 @@
 package stores
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	_ "github.com/jackc/pgx/stdlib"
@@ -46,21 +49,48 @@ var assignmentInfoSql string = `select distinct
 func (ss *SurveyStore) GetAssignmentInfo(userId string) (models.AssignmentInfo, error) {
 	ai := []models.AssignmentInfo{}
 	err := ss.db.Select(&ai, assignmentInfoSql, userId, userId)
+	if err != nil {
+		return models.AssignmentInfo{}, err
+	}
+	if len(ai) == 0 {
+		return models.AssignmentInfo{}, errors.New("Invalid Record")
+	}
+	if ai[0].NextSurvey == nil {
+		ns := 1
+		ai[0].NextSurvey = &ns
+	}
 	return ai[0], err
 }
 
-var surveySql string = `select $2 as sa_id, fd_id,x,y,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,
+var nsiSurveySql string = `select $2 as sa_id, false as invalid_structure, fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0 as num_story, 0.0 as sqft,found_type,
                         '' as rsmeans_type, '' as quality, '' as const_type, '' as garage, '' as roof_style 
-                        from nsi.nsi where fd_id=(select fd_id from survey_element where id=$1)`
+						from nsi.nsi where fd_id=(select fd_id from survey_element where id=$1)`
+
+var surveySql string = `select sa_id, fd_id,x,y,invalid_structure,cbfips,occtype,st_damcat,found_ht,num_story,sqft,
+                        found_type,rsmeans_type,quality,const_type,garage,roof_style 
+                        from survey_result where sa_id=$1`
 
 func (ss *SurveyStore) GetStructure(seId int, saId int) (models.SurveyStructure, error) {
 	s := models.SurveyStructure{}
-	err := ss.db.Get(&s, surveySql, seId, strconv.Itoa(saId))
+	err := ss.db.Get(&s, surveySql, strconv.Itoa(saId))
 	if err != nil {
-		log.Printf("Failed to retrieve structure: %s/n", err)
-		return s, err
+		if err == sql.ErrNoRows {
+			//no existing survey result, get survey data from nsi
+			err := ss.db.Get(&s, nsiSurveySql, seId, strconv.Itoa(saId))
+			if err != nil {
+				log.Printf("Failed to retrieve structure: %s/n", err)
+				return s, err
+			}
+			log.Printf("Returning NSI Data for survey assignment: %d/n", saId)
+			s.OccupancyType = strings.Split(s.OccupancyType, "-")[0]
+			return s, nil
+		} else {
+			log.Printf("Failed to query survey results for existing assignment: %s/n", err)
+			return s, err //return error
+		}
 	}
-	return s, nil
+	log.Printf("Returning existing Survey Result for survey assignment: %d/n", saId)
+	return s, err //return survey from survey_result
 }
 
 var assignSurveySql string = `insert into survey_assignment (se_id,assigned_to) values ($1,$2) returning id`
@@ -74,11 +104,23 @@ func (ss *SurveyStore) AssignSurvey(userId string, seId int) (int, error) {
 	return int(saId), nil
 }
 
-var insertSurveyStructure string = `insert into survey_result 
+/*
+var insertSurveyStructure string = `insert into survey_result
 									 (sa_id,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,
-									  rsmeans_type,quality,const_type,garage,roof_style) 
+									  rsmeans_type,quality,const_type,garage,roof_style)
 									 values (:sa_id,:fd_id,:x,:y,:cbfips,:occtype,:st_damcat,:found_ht,:num_story,:sqft,:found_type,
 									  :rsmeans_type,:quality,:const_type,:garage,:roof_style)`
+*/
+
+var insertSurveyStructure string = `insert into survey_result 
+									  (sa_id,fd_id,x,y,invalid_structure,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,rsmeans_type,quality,const_type,garage,roof_style) 
+									  values (:sa_id,:fd_id,:x,:y,:invalid_structure,:cbfips,:occtype,:st_damcat,:found_ht,:num_story,:sqft,:found_type,:rsmeans_type,:quality,:const_type,:garage,:roof_style)
+									  ON CONFLICT (sa_id)
+									  DO UPDATE SET x=EXCLUDED.x,y=EXCLUDED.y,invalid_structure=EXCLUDED.invalid_structure,cbfips=EXCLUDED.cbfips,occtype=EXCLUDED.occtype,
+													st_damcat=EXCLUDED.st_damcat,found_ht=EXCLUDED.found_ht,num_story=EXCLUDED.num_story,
+													sqft=EXCLUDED.sqft,found_type=EXCLUDED.found_type,rsmeans_type=EXCLUDED.rsmeans_type,
+													quality=EXCLUDED.quality,const_type=EXCLUDED.const_type,garage=EXCLUDED.garage,roof_style=EXCLUDED.roof_style`
+
 var updateAssignment string = `update survey_assignment set completed='true' where id=$1`
 
 func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
