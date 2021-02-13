@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
+	"github.com/jackc/pgx"
 
 	"github.com/labstack/echo/v4"
 
@@ -39,6 +40,10 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 		saId, err := sh.store.AssignSurvey(userId, *nextSurvey)
 		if err != nil {
 			log.Printf("Error assigning Survey: %s", err)
+			pgerr := err.(pgx.PgError)
+			if pgerr.Code == "23503" && pgerr.TableName == "survey_assignment" {
+				return c.String(200, `{"result":"completed"}`) //this should only occur when we are out of surveys
+			}
 			return err
 		}
 

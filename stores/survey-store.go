@@ -104,14 +104,6 @@ func (ss *SurveyStore) AssignSurvey(userId string, seId int) (int, error) {
 	return int(saId), nil
 }
 
-/*
-var insertSurveyStructure string = `insert into survey_result
-									 (sa_id,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,
-									  rsmeans_type,quality,const_type,garage,roof_style)
-									 values (:sa_id,:fd_id,:x,:y,:cbfips,:occtype,:st_damcat,:found_ht,:num_story,:sqft,:found_type,
-									  :rsmeans_type,:quality,:const_type,:garage,:roof_style)`
-*/
-
 var insertSurveyStructure string = `insert into survey_result 
 									  (sa_id,fd_id,x,y,invalid_structure,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,rsmeans_type,quality,const_type,garage,roof_style) 
 									  values (:sa_id,:fd_id,:x,:y,:invalid_structure,:cbfips,:occtype,:st_damcat,:found_ht,:num_story,:sqft,:found_type,:rsmeans_type,:quality,:const_type,:garage,:roof_style)
