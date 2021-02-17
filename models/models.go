@@ -49,6 +49,7 @@ type SurveyStructure struct {
 	X                float64 `db:"x" json:"x"`
 	Y                float64 `db:"y" json:"y"`
 	InvalidStructure bool    `db:"invalid_structure" json:"invalidStructure"`
+	NoStreetView     bool    `db:"no_street_view" json:"noStreetView"`
 	CBfips           string  `db:"cbfips" json:"cbfips"`
 	OccupancyType    string  `db:"occtype" json:"occupancyType"`
 	Damcat           string  `db:"st_damcat" json:"damcat"`

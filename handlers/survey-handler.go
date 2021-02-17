@@ -31,7 +31,7 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 		return err
 	}
 	structure := models.SurveyStructure{}
-	if assignmentInfo.Completed == nil || *assignmentInfo.Completed { //anything other than 'false'
+	if assignmentInfo.Completed == nil || *assignmentInfo.Completed { //anything other than an explicit 'false'
 		nextSurvey := assignmentInfo.NextSurvey
 
 		if assignmentInfo.NextControl != nil && *assignmentInfo.NextControl < *assignmentInfo.NextSurvey {

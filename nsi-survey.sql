@@ -29,6 +29,7 @@ create table survey_result(
     X double precision not null,
     Y double precision not null,
     invalid_structure boolean not null,
+    no_street_view boolean not null,
     cbfips varchar(15),
     occtype varchar(9),
     st_damcat varchar(3),

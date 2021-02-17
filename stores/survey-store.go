@@ -62,11 +62,11 @@ func (ss *SurveyStore) GetAssignmentInfo(userId string) (models.AssignmentInfo, 
 	return ai[0], err
 }
 
-var nsiSurveySql string = `select $2 as sa_id, false as invalid_structure, fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0 as num_story, 0.0 as sqft,found_type,
+var nsiSurveySql string = `select $2 as sa_id, false as invalid_structure, false as no_street_view,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0 as num_story, 0.0 as sqft,found_type,
                         '' as rsmeans_type, '' as quality, '' as const_type, '' as garage, '' as roof_style 
 						from nsi.nsi where fd_id=(select fd_id from survey_element where id=$1)`
 
-var surveySql string = `select sa_id, fd_id,x,y,invalid_structure,cbfips,occtype,st_damcat,found_ht,num_story,sqft,
+var surveySql string = `select sa_id, fd_id,x,y,invalid_structure,no_street_view,cbfips,occtype,st_damcat,found_ht,num_story,sqft,
                         found_type,rsmeans_type,quality,const_type,garage,roof_style 
                         from survey_result where sa_id=$1`
 
@@ -105,11 +105,11 @@ func (ss *SurveyStore) AssignSurvey(userId string, seId int) (int, error) {
 }
 
 var insertSurveyStructure string = `insert into survey_result 
-									  (sa_id,fd_id,x,y,invalid_structure,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,rsmeans_type,quality,const_type,garage,roof_style) 
-									  values (:sa_id,:fd_id,:x,:y,:invalid_structure,:cbfips,:occtype,:st_damcat,:found_ht,:num_story,:sqft,:found_type,:rsmeans_type,:quality,:const_type,:garage,:roof_style)
+									  (sa_id,fd_id,x,y,invalid_structure,no_street_view,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,rsmeans_type,quality,const_type,garage,roof_style) 
+									  values (:sa_id,:fd_id,:x,:y,:invalid_structure,:no_street_view,:cbfips,:occtype,:st_damcat,:found_ht,:num_story,:sqft,:found_type,:rsmeans_type,:quality,:const_type,:garage,:roof_style)
 									  ON CONFLICT (sa_id)
-									  DO UPDATE SET x=EXCLUDED.x,y=EXCLUDED.y,invalid_structure=EXCLUDED.invalid_structure,cbfips=EXCLUDED.cbfips,occtype=EXCLUDED.occtype,
-													st_damcat=EXCLUDED.st_damcat,found_ht=EXCLUDED.found_ht,num_story=EXCLUDED.num_story,
+									  DO UPDATE SET x=EXCLUDED.x,y=EXCLUDED.y,invalid_structure=EXCLUDED.invalid_structure,no_street_view=EXCLUDED.no_street_view, cbfips=EXCLUDED.cbfips,
+									  				occtype=EXCLUDED.occtype,st_damcat=EXCLUDED.st_damcat,found_ht=EXCLUDED.found_ht,num_story=EXCLUDED.num_story,
 													sqft=EXCLUDED.sqft,found_type=EXCLUDED.found_type,rsmeans_type=EXCLUDED.rsmeans_type,
 													quality=EXCLUDED.quality,const_type=EXCLUDED.const_type,garage=EXCLUDED.garage,roof_style=EXCLUDED.roof_style`
 
