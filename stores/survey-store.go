@@ -33,22 +33,38 @@ func CreateSurveyStore(appConfig *models.Config) (*SurveyStore, error) {
 	return &ss, nil
 }
 
+/*
 var assignmentInfoSql string = `select distinct
-								t1.id as sa_id, 
+								t1.id as sa_id,
 								t1.se_id,
 								t1.completed,
 								(select (max(se_id)+1) from survey_assignment) as next_survey,
-								(select min(t1.id) from survey_element t1 
+								(select min(t1.id) from survey_element t1
 									left outer join (select * from survey_assignment where assigned_to=$1) t2 on t1.id=t2.se_id
-									where assigned_to is null and is_control='true') as next_control
+									where assigned_to is null and is_control='true' and survey_event_id=$2) as next_control
 								from survey_element t2
 								left outer join survey_assignment t1 on t1.se_id=t2.id
 								where t1.id=(select max(id) from survey_assignment where assigned_to=$2) or t1.id is null
 								order by t1.id`
+*/
 
-func (ss *SurveyStore) GetAssignmentInfo(userId string) (models.AssignmentInfo, error) {
+var assignmentInfoSql string = `select distinct
+								t1.id as sa_id, 
+								t1.se_id,
+								t1.completed,
+								(select (max(t1.se_id)+1) from survey_assignment t1 inner join survey_element t2 on t2.id=t1.se_id where t2.survey_event_id=$1) as next_survey,
+								(select min(t1.id) from survey_element t1 
+										left outer join (select * from survey_assignment where assigned_to=$2) t2 on t1.id=t2.se_id
+										where assigned_to is null and is_control='true' and survey_event_id=$3) as next_control
+								from survey_element t2
+								left outer join survey_assignment t1 on t1.se_id=t2.id
+								where t1.id=(select max(t1.id) from survey_assignment t1 inner join survey_element t2 on t1.se_id=t2.id where t2.survey_event_id=$4 and t1.assigned_to=$5) 
+									or t1.id is null
+								order by t1.id`
+
+func (ss *SurveyStore) GetAssignmentInfo(userId string, surveyEventId int) (models.AssignmentInfo, error) {
 	ai := []models.AssignmentInfo{}
-	err := ss.db.Select(&ai, assignmentInfoSql, userId, userId)
+	err := ss.db.Select(&ai, assignmentInfoSql, surveyEventId, userId, surveyEventId, surveyEventId, userId)
 	if err != nil {
 		return models.AssignmentInfo{}, err
 	}
@@ -56,10 +72,19 @@ func (ss *SurveyStore) GetAssignmentInfo(userId string) (models.AssignmentInfo, 
 		return models.AssignmentInfo{}, errors.New("Invalid Record")
 	}
 	if ai[0].NextSurvey == nil {
-		ns := 1
+		ns, err := ss.GetFirstSurveyInEvent(surveyEventId)
+		if err != nil {
+			return models.AssignmentInfo{}, err
+		}
 		ai[0].NextSurvey = &ns
 	}
 	return ai[0], err
+}
+
+func (ss *SurveyStore) GetFirstSurveyInEvent(surveyEventId int) (int, error) {
+	var firstSurvey int
+	err := ss.db.Get(&firstSurvey, "select min(id) from survey_element where survey_event_id=$1", surveyEventId)
+	return firstSurvey, err
 }
 
 var nsiSurveySql string = `select $2 as sa_id, false as invalid_structure, false as no_street_view,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0 as num_story, 0.0 as sqft,found_type,
@@ -124,4 +149,40 @@ func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
 		tx.MustExec(updateAssignment, survey.SAID)
 	})
 	return err
+}
+
+var surveyReportSql string = `select 
+								t1.id as sr_id,
+								t3.user_id,
+								t3.user_name,
+								t2.completed,
+								t4.is_control,
+								t1.sa_id,
+								t1.fd_id,
+								t1.x,
+								t1.y,
+								t1.cbfips,
+								t1.occtype,
+								t1.st_damcat,
+								t1.found_ht,
+								t1.num_story,
+								t1.sqft,
+								t1.found_type,
+								t1.rsmeans_type,
+								t1.quality,
+								t1.const_type,
+								t1.garage,
+								t1.roof_style,
+								t1.invalid_structure,
+								t1.no_street_view 
+								from survey_result t1
+								inner join survey_assignment t2 on t2.id=t1.sa_id
+								inner join surveyor t3 on t3.user_id=t2.assigned_to
+								inner join survey_element t4 on t4.id=t2.se_id
+								where t4.survey_event_id=$1`
+
+func (ss *SurveyStore) GetReport(surveyEventId int) ([]models.SurveyResult, error) {
+	s := []models.SurveyResult{}
+	err := ss.db.Select(&s, surveyReportSql, surveyEventId)
+	return s, err
 }

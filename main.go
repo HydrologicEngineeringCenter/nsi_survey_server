@@ -29,7 +29,7 @@ func main() {
 		log.Printf("Unable to connect to database during startup: %s", err)
 	}
 
-	surveyHandler := handlers.CreateSurveyHandler(ss)
+	surveyHandler := handlers.CreateSurveyHandler(ss, cfg.SurveyEvent)
 	jwtAuth := auth.Auth{
 		Store: ss,
 	}
@@ -44,6 +44,7 @@ func main() {
 	// Public Routes
 	e.GET("nsisapi/survey", surveyHandler.GetSurvey)
 	e.POST("nsisapi/survey", surveyHandler.SaveSurvey)
+	e.GET("nsisapi/reports/surveys/:eventID", surveyHandler.GetSurveyReport)
 
 	if cfg.LambdaContext {
 		log.Print("starting server; Running On AWS LAMBDA")

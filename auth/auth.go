@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/rsa"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -27,6 +28,11 @@ type Auth struct {
 
 func (a *Auth) Authorize(handler echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		path := c.Request().URL.Path
+		if strings.HasPrefix(path, "/nsisapi/reports") {
+			return handler(c)
+		}
+		fmt.Println()
 		auth := c.Request().Header.Get(echo.HeaderAuthorization)
 		tokenString := strings.TrimPrefix(auth, "Bearer ")
 		claims, err := a.marshalJwt(tokenString)

@@ -1,7 +1,8 @@
 create table survey_element (
     id serial primary key not null,
     fd_id int not null,
-    is_control boolean
+    survey_event_id int not null,
+    is_control boolean,
 );
 
 create table surveyor(
