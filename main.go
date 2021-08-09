@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/USACE/microauth"
 	"github.com/apex/gateway"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
@@ -30,14 +31,14 @@ func main() {
 	}
 
 	surveyHandler := handlers.CreateSurveyHandler(ss, cfg.SurveyEvent)
-	jwtAuth := auth.Auth{
-		Store: ss,
+	jwtAuth := microauth.Auth{
+		AuthMiddleware: auth.Appauth,
 	}
 	jwtAuth.LoadVerificationKey(cfg.Ippk)
 
 	e := echo.New()
 
-	e.Use(jwtAuth.Authorize)
+	e.Use(jwtAuth.AuthorizeMiddleware)
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
@@ -45,6 +46,11 @@ func main() {
 	e.GET("nsisapi/survey", surveyHandler.GetSurvey)
 	e.POST("nsisapi/survey", surveyHandler.SaveSurvey)
 	e.GET("nsisapi/reports/surveys/:eventID", surveyHandler.GetSurveyReport)
+
+	//new endpoints
+	// - create new survey
+	// - add list of survey elements
+	// - assign users to survey
 
 	if cfg.LambdaContext {
 		log.Print("starting server; Running On AWS LAMBDA")

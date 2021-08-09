@@ -3,6 +3,8 @@ package models
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/usace/dataquery"
 )
 
 type JwtClaim struct {
@@ -21,6 +23,16 @@ type Config struct {
 	Dbport        string
 	Ippk          string
 	SurveyEvent   int
+}
+
+func (c *Config) Rdbmsconfig() dataquery.RdbmsConfig {
+	return dataquery.RdbmsConfig{
+		Dbuser: c.Dbuser,
+		Dbpass: c.Dbpass,
+		Dbhost: c.Dbhost,
+		Dbport: c.Dbport,
+		Dbname: c.Dbname,
+	}
 }
 
 type AssignmentInfo struct {

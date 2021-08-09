@@ -2,7 +2,7 @@ create table survey_element (
     id serial primary key not null,
     fd_id int not null,
     survey_event_id int not null,
-    is_control boolean,
+    is_control boolean
 );
 
 create table surveyor(
@@ -50,8 +50,8 @@ create table survey_result(
     
 );
 
-CREATE UNIQUE INDEX CONCURRENTLY idx_survey_result_said ON survey_result (sa_id);
-ALTER TABLE survey_result ADD CONSTRAINT unique_sa_id UNIQUE USING INDEX idx_survey_result_said;
+CREATE UNIQUE INDEX CONCURRENTLY idx_sr_said ON survey_result (sa_id);
+ALTER TABLE survey_result ADD CONSTRAINT unique_sa_id UNIQUE USING INDEX idx_sr_said;
 
 --drop table survey_result;
 --drop table survey_assignment;
