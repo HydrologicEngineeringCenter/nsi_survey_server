@@ -1,41 +1,121 @@
 package stores
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log"
-	"strconv"
 	"strings"
 
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/config"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
-	_ "github.com/jackc/pgx/stdlib"
-	"github.com/jmoiron/sqlx"
-	"github.com/usace/dataquery"
+	"github.com/google/uuid"
+	"github.com/usace/goquery"
 )
 
 type SurveyStore struct {
-	store dataquery.SqlDataStore
+	DS goquery.DataStore
 }
 
-func CreateSurveyStore(appConfig *models.Config) (*SurveyStore, error) {
+func CreateSurveyStore(appConfig *config.Config) (*SurveyStore, error) {
 	dbconf := appConfig.Rdbmsconfig()
-	con, err := dataquery.NewSqlConnection(&dbconf)
+	ds, err := goquery.NewRdbmsDataStore(&dbconf)
 	if err != nil {
 		log.Printf("Unable to connect to database during startup: %s", err)
 	}
 	log.Printf("Connected as %s to database %s:%s/%s", appConfig.Dbuser, appConfig.Dbhost, appConfig.Dbport, appConfig.Dbname)
-	con.SetMaxOpenConns(4)
-	ss := SurveyStore{
-		store: dataquery.SqlDataStore{
-			DB: con,
-		},
-	}
+
+	//ds.SetMaxOpenConns(4)
+	ss := SurveyStore{ds}
 	return &ss, nil
 }
 
-func (ss *SurveyStore) GetAssignmentInfo(userId string, surveyEventId int) (models.AssignmentInfo, error) {
+func (ss *SurveyStore) GetSurvey(surveyId uuid.UUID) (models.Survey, error) {
+	survey := models.Survey{}
+	err := ss.DS.Select().
+		DataSet(&surveyTable).
+		StatementKey("selectById").
+		Dest(&survey).
+		Params(surveyId).
+		Fetch()
+	return survey, err
+}
+
+func (ss *SurveyStore) CreateNewSurvey(survey models.Survey, userId string) (uuid.UUID, error) {
+	var surveyId uuid.UUID
+	err := goquery.Transaction(ss.DS, func(tx goquery.Tx) {
+		err := ss.DS.Select().
+			DataSet(&surveyTable).
+			Tx(&tx).
+			StatementKey("insert").
+			Params(survey.Title, survey.Description, survey.Active).
+			Dest(&surveyId).
+			Fetch()
+
+		if err != nil {
+			panic(err)
+		}
+		ptx := tx.PgxTx()
+		_, err = ptx.Exec(context.Background(), surveyTable.Statements["insert-owner"], surveyId, userId)
+		if err != nil {
+			panic(err)
+		}
+	})
+	return surveyId, err
+}
+
+func (ss *SurveyStore) UpdateSurvey(survey models.Survey) error {
+	err := ss.DS.Exec(goquery.NoTx, surveyTable.Statements["update"], survey.Title, survey.Description, survey.Active, survey.ID)
+	return err
+}
+
+func (ss *SurveyStore) AddSurveyOwner(owner models.SurveyOwner) error {
+	err := ss.DS.Exec(goquery.NoTx, surveyOwnerTable.Statements["insert"], owner.SurveyID, owner.UserID)
+	return err
+}
+
+func (ss *SurveyStore) RemoveSurveyOwner(id uuid.UUID) error {
+	err := ss.DS.Exec(goquery.NoTx, surveyOwnerTable.Statements["remove"], id)
+	return err
+}
+
+func (ss SurveyStore) InsertSurveyElements(elements *[]models.SurveyElement) error {
+	err := ss.DS.Insert(&surveyElementTable).
+		Records(elements).
+		Execute()
+
+	if err != nil {
+		log.Printf("Error inserting survey elements: %s", err)
+	}
+	return err
+}
+
+func (ss SurveyStore) InsertSurveyAssignments(assignments *[]models.SurveyAssignment) error {
+	err := ss.DS.Insert(&surveyAssignmentTable).
+		Records(assignments).
+		Execute()
+
+	if err != nil {
+		log.Printf("Error inserting survey assignments: %s", err)
+	}
+	return err
+}
+
+func (ss *SurveyStore) GetReport(surveyId uuid.UUID) ([]models.SurveyResult, error) {
+	s := []models.SurveyResult{}
+	err := ss.DS.Select(miscQueries.Statements["surveyReport"]).
+		Params(surveyId).
+		Dest(s).
+		Fetch()
+	return s, err
+}
+
+func (ss *SurveyStore) GetAssignmentInfo(userId string, surveyId uuid.UUID) (models.AssignmentInfo, error) {
 	ai := []models.AssignmentInfo{}
-	err := ss.store.DB.Select(&ai, tables.Statements["assignmentInfo"], surveyEventId, userId, surveyEventId, surveyEventId, userId)
+	err := ss.DS.Select(surveyAssignmentTable.Statements["assignmentInfo"]).
+		Params(surveyId, userId, surveyId, surveyId, userId).
+		Dest(ai).
+		Fetch()
 	if err != nil {
 		return models.AssignmentInfo{}, err
 	}
@@ -43,7 +123,7 @@ func (ss *SurveyStore) GetAssignmentInfo(userId string, surveyEventId int) (mode
 		return models.AssignmentInfo{}, errors.New("Invalid Record")
 	}
 	if ai[0].NextSurvey == nil {
-		ns, err := ss.GetFirstSurveyInEvent(surveyEventId)
+		ns, err := ss.GetFirstSurveyInEvent(surveyId)
 		if err != nil {
 			return models.AssignmentInfo{}, err
 		}
@@ -52,19 +132,28 @@ func (ss *SurveyStore) GetAssignmentInfo(userId string, surveyEventId int) (mode
 	return ai[0], err
 }
 
-func (ss *SurveyStore) GetFirstSurveyInEvent(surveyEventId int) (int, error) {
-	var firstSurvey int
-	err := ss.store.DB.Get(&firstSurvey, "select min(id) from survey_element where survey_event_id=$1", surveyEventId)
+func (ss *SurveyStore) GetFirstSurveyInEvent(surveyId uuid.UUID) (uuid.UUID, error) {
+	var firstSurvey uuid.UUID
+	err := ss.DS.Select("select min(id) from survey_element where survey_event_id=$1").
+		Params(surveyId).
+		Dest(firstSurvey).
+		Fetch()
 	return firstSurvey, err
 }
 
-func (ss *SurveyStore) GetStructure(seId int, saId int) (models.SurveyStructure, error) {
+func (ss *SurveyStore) GetStructure(seId uuid.UUID, saId uuid.UUID) (models.SurveyStructure, error) {
 	s := models.SurveyStructure{}
-	err := ss.store.DB.Get(&s, tables.Statements["survey"], strconv.Itoa(saId))
+	err := ss.DS.Select(surveyTable.Statements["survey"]).
+		Params(saId).
+		Dest(&s).
+		Fetch()
 	if err != nil {
 		if err == sql.ErrNoRows {
 			//no existing survey result, get survey data from nsi
-			err := ss.store.DB.Get(&s, tables.Statements["nsi_survey"], seId, strconv.Itoa(saId))
+			err := ss.DS.Select(surveyTable.Statements["nsi-survey"]).
+				Params(seId, saId).
+				Dest(&s).
+				Fetch()
 			if err != nil {
 				log.Printf("Failed to retrieve structure: %s/n", err)
 				return s, err
@@ -83,15 +172,20 @@ func (ss *SurveyStore) GetStructure(seId int, saId int) (models.SurveyStructure,
 
 func (ss *SurveyStore) AssignSurvey(userId string, seId int) (int, error) {
 	var saId int
-	err := ss.store.DB.QueryRow(tables.Statements["assignSurvey"], seId, userId).Scan(&saId)
+	//err := ss.DB.QueryRow(tables.Statements["assignSurvey"], seId, userId).Scan(&saId)
+	err := ss.DS.Select(surveyAssignmentTable.Statements["assignSurvey"]).
+		Params(seId, userId).
+		Dest(saId).
+		Fetch()
 	if err != nil {
 		return -1, err
 	}
 	return int(saId), nil
 }
 
+/*
 func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
-	err := transaction(ss.store.DB, func(tx *sqlx.Tx) {
+	err := goquery.Transaction(ss.DS, func(tx goquery.Tx) {
 		_, txerr := tx.NamedExec(tables.Statements["upsertSurveyStructure"], survey)
 		if txerr != nil {
 			panic(txerr)
@@ -100,9 +194,4 @@ func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
 	})
 	return err
 }
-
-func (ss *SurveyStore) GetReport(surveyEventId int) ([]models.SurveyResult, error) {
-	s := []models.SurveyResult{}
-	err := ss.store.DB.Select(&s, tables.Statements["surveyReport"], surveyEventId)
-	return s, err
-}
+*/

@@ -2,25 +2,25 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/USACE/microauth"
-	"github.com/apex/gateway"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/auth"
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/config"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/handlers"
-	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
 )
 
 // Config holds all runtime configuration provided via environment variables
 
+const urlPrefix = "nsiapi"
+
 func main() {
-	var cfg models.Config
-	if err := envconfig.Process("ns", &cfg); err != nil {
+	var cfg config.Config
+	if err := envconfig.Process("", &cfg); err != nil {
 		log.Fatal(err.Error())
 	}
 	cfg.SkipJWT = true
@@ -30,7 +30,7 @@ func main() {
 		log.Printf("Unable to connect to database during startup: %s", err)
 	}
 
-	surveyHandler := handlers.CreateSurveyHandler(ss, cfg.SurveyEvent)
+	surveyHandler := handlers.CreateSurveyHandler(ss)
 	jwtAuth := microauth.Auth{
 		AuthMiddleware: auth.Appauth,
 	}
@@ -43,20 +43,17 @@ func main() {
 	e.Use(middleware.Recover())
 
 	// Public Routes
-	e.GET("nsisapi/survey", surveyHandler.GetSurvey)
-	e.POST("nsisapi/survey", surveyHandler.SaveSurvey)
-	e.GET("nsisapi/reports/surveys/:eventID", surveyHandler.GetSurveyReport)
+	e.GET(urlPrefix+"/version", surveyHandler.Version)
+	//e.GET(urlPrefix+"/survey", surveyHandler.GetSurvey)
+	//e.POST(urlPrefix+"/survey", surveyHandler.SaveSurvey)
+	//e.GET(urlPrefix+"/reports/surveys/:eventID", surveyHandler.GetSurveyReport)
+	//e.GET(urlPrefix+"/survey/create", surveyHandler.CreateNewSurvey)
 
 	//new endpoints
 	// - create new survey
 	// - add list of survey elements
 	// - assign users to survey
 
-	if cfg.LambdaContext {
-		log.Print("starting server; Running On AWS LAMBDA")
-		log.Fatal(gateway.ListenAndServe("localhost:3030", e))
-	} else {
-		log.Print("starting server on port 3031")
-		log.Fatal(http.ListenAndServe("0.0.0.0:3031", e))
-	}
+	e.Logger.Fatal(e.Start(":" + cfg.Port))
+
 }

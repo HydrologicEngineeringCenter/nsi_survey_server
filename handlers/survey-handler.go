@@ -1,38 +1,123 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-
-	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
-	"github.com/jackc/pgx"
-
-	"github.com/labstack/echo/v4"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
+	"github.com/USACE/microauth"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 )
 
 type SurveyHandler struct {
-	store         *stores.SurveyStore
-	surveyEventId int
+	store *stores.SurveyStore
 }
 
-func CreateSurveyHandler(ss *stores.SurveyStore, eventId int) *SurveyHandler {
+func CreateSurveyHandler(ss *stores.SurveyStore) *SurveyHandler {
 	sh := SurveyHandler{
-		store:         ss,
-		surveyEventId: eventId,
+		store: ss,
 	}
 	return &sh
 }
 
-func (sh *SurveyHandler) GetSurveyReport(c echo.Context) error {
-	var eventId int
-	eventId, err := strconv.Atoi(c.Param("eventID"))
-	if err != nil {
-		eventId = sh.surveyEventId
+func (sh *SurveyHandler) Version(c echo.Context) error {
+	return c.String(http.StatusOK, "NSI Survey API Version 2.01 Development")
+}
+
+func (sh *SurveyHandler) CreateNewSurvey(c echo.Context) error {
+	var survey = models.Survey{}
+	if err := c.Bind(&survey); err != nil {
+		return err
 	}
-	s, err := sh.store.GetReport(eventId)
+	jwtclaims := c.Get("NSIUSER").(microauth.JwtClaim)
+
+	newId, err := sh.store.CreateNewSurvey(survey, jwtclaims.Sub)
+	if err != nil {
+		log.Println("Error creating survey -----------")
+		log.Println(err)
+		log.Println(survey)
+		log.Println("--------------------------------")
+		return err
+	}
+
+	return c.JSONBlob(http.StatusCreated, []byte(fmt.Sprintf(`{"surveyId":"%s"}`, newId)))
+}
+
+func (sh *SurveyHandler) UpdateSurvey(c echo.Context) error {
+	var survey = models.Survey{}
+	if err := c.Bind(&survey); err != nil {
+		return err
+	}
+	err := sh.store.UpdateSurvey(survey)
+	if err != nil {
+		log.Printf("Error updating survey: %s", err)
+		return err
+	}
+	return c.String(http.StatusOK, "")
+}
+
+func (sh *SurveyHandler) AddSurveyOwner(c echo.Context) error {
+	var surveyOwner = models.SurveyOwner{}
+	if err := c.Bind(&surveyOwner); err != nil {
+		return err
+	}
+	err := sh.store.AddSurveyOwner(surveyOwner)
+	if err != nil {
+		log.Printf("Error adding survey owner: %s", err)
+		return err
+	}
+	return c.String(http.StatusCreated, "")
+}
+
+func (sh *SurveyHandler) RemoveSurveyOwner(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("surveyOwnerId"))
+	if err != nil {
+		log.Printf("Invalid Survey Owner Record ID: %s\n", err)
+		return err
+	}
+	err = sh.store.RemoveSurveyOwner(id)
+	if err != nil {
+		log.Printf("Error removing survey owner: %s", err)
+		return err
+	}
+	return c.String(http.StatusCreated, "")
+}
+
+func (sh *SurveyHandler) InsertSurveyElements(c echo.Context) error {
+	var elements = []models.SurveyElement{}
+	if err := c.Bind(&elements); err != nil {
+		return err
+	}
+	err := sh.store.InsertSurveyElements(&elements)
+	if err != nil {
+		return err
+	}
+	return c.String(http.StatusCreated, "")
+}
+
+func (sh *SurveyHandler) AddAssignments(c echo.Context) error {
+	var assignments = []models.SurveyAssignment{}
+	if err := c.Bind(&assignments); err != nil {
+		return err
+	}
+	err := sh.store.InsertSurveyAssignments(&assignments)
+	if err != nil {
+		return err
+	}
+	return c.String(http.StatusCreated, "")
+
+}
+
+func (sh *SurveyHandler) GetSurveyReport(c echo.Context) error {
+	surveyId, err := uuid.Parse(c.Param("surveyID"))
+	if err != nil {
+		return err
+	}
+
+	s, err := sh.store.GetReport(surveyId)
 	if err != nil {
 		return err
 	}
@@ -61,10 +146,15 @@ func (sh *SurveyHandler) GetSurveyReport(c echo.Context) error {
 	return err
 }
 
+/*
 func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
+	surveyId, err := uuid.Parse(c.Param("surveyID"))
+	if err != nil {
+		return err
+	}
 	claims := c.Get("NSIUSER").(models.JwtClaim)
 	userId := claims.Sub
-	assignmentInfo, err := sh.store.GetAssignmentInfo(userId, sh.surveyEventId)
+	assignmentInfo, err := sh.store.GetAssignmentInfo(userId, surveyId)
 	if err != nil {
 		return err
 	}
@@ -75,6 +165,7 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 		if assignmentInfo.NextControl != nil && *assignmentInfo.NextControl < *assignmentInfo.NextSurvey {
 			nextSurvey = assignmentInfo.NextControl
 		}
+
 		saId, err := sh.store.AssignSurvey(userId, *nextSurvey)
 		if err != nil {
 			log.Printf("Error assigning Survey: %s", err)
@@ -99,6 +190,7 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 	return c.JSON(http.StatusOK, structure)
 }
 
+
 func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
 	s := models.SurveyStructure{}
 	if err := c.Bind(&s); err != nil {
@@ -110,3 +202,5 @@ func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
 	}
 	return c.String(http.StatusOK, `{"result":"success"}`)
 }
+
+*/

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/usace/dataquery"
+	"github.com/google/uuid"
 )
 
 type JwtClaim struct {
@@ -12,49 +12,40 @@ type JwtClaim struct {
 	Name string
 }
 
-type Config struct {
-	SkipJWT       bool
-	LambdaContext bool
-	Dbuser        string
-	Dbpass        string
-	Dbname        string
-	Dbhost        string
-	DBSSLMode     string
-	Dbport        string
-	Ippk          string
-	SurveyEvent   int
+type Survey struct {
+	ID          uuid.UUID `db:"id" json:"id"`
+	Title       string    `db:"title" json:"title"`
+	Description string    `db:"description" json:"description"`
+	Active      bool      `db:"active" json:"active"`
 }
 
-func (c *Config) Rdbmsconfig() dataquery.RdbmsConfig {
-	return dataquery.RdbmsConfig{
-		Dbuser: c.Dbuser,
-		Dbpass: c.Dbpass,
-		Dbhost: c.Dbhost,
-		Dbport: c.Dbport,
-		Dbname: c.Dbname,
-	}
+type SurveyOwner struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	SurveyID uuid.UUID `db:"survey_id" json:"surveyId"`
+	UserID   string    `db:"user_id" json:"userId"`
 }
 
 type AssignmentInfo struct {
-	SA_ID       *int  `db:"sa_id"`
-	SE_ID       *int  `db:"se_id"`
-	Completed   *bool `db:"completed"`
-	NextSurvey  *int  `db:"next_survey"`
-	NextControl *int  `db:"next_control"`
-}
-
-type SurveyAssignment struct {
-	ID               string
-	SurveyElement_ID string
-	Completed        bool
-	Assigned         string
+	SA_ID       *uuid.UUID `db:"sa_id"`
+	SE_ID       *uuid.UUID `db:"se_id"`
+	Completed   *bool      `db:"completed"`
+	NextSurvey  *uuid.UUID `db:"next_survey"`
+	NextControl *uuid.UUID `db:"next_control"`
 }
 
 type SurveyElement struct {
-	ID            string `json:"se_id"`
-	FD_ID         string `json:"fd_id"`
-	Is_control    bool   `json:"is_control"`
-	SurveyEventID int    `json:"surveyEventId"`
+	ID          string `json:"seId" db:"id" dbid:"AUTOINCREMENT"`
+	SurveyID    string `json:"surveyId" db:"survey_id"`
+	SurveyOrder int    `json:"surveyOrder" db:"survey_order"`
+	FD_ID       int    `json:"fdId" db:"fd_id"`
+	Is_control  bool   `json:"isControl" db:"is_control"`
+}
+
+type SurveyAssignment struct {
+	ID               string `json:"saId" db:"id" dbid:"AUTOINCREMENT"`
+	SurveyElement_ID string `json:"seId" db:"se_id"`
+	Completed        bool   `json:"completed" db:"completed"`
+	Assigned         string `json:"assignedTo" db:"assigned_to"`
 }
 
 /*

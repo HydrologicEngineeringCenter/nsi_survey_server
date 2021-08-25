@@ -1,31 +1,45 @@
-create table survey_element (
-    id serial primary key not null,
-    fd_id int not null,
-    survey_event_id int not null,
-    is_control boolean
+create table survey (
+    id uuid not null default gen_random_uuid() primary key,
+    title varchar(200) not null,
+    description text,
+    active boolean
 );
 
-create table surveyor(
-    user_id varchar(20) not null primary key,
-    user_name varchar(200) not null
+create table survey_owner(
+   id uuid not null default gen_random_uuid() primary key,
+   survey_id uuid not null,
+   user_id varchar(50) not null 
+);
+
+create table survey_element (
+    id uuid not null default gen_random_uuid() primary key,
+    survey_id uuid not null,
+    survey_order int not null,
+    fd_id int not null,
+    is_control boolean default false
+);
+
+create table survey_users(
+    user_id varchar(50) not null primary key,
+    user_name text not null
 );
 
 create table survey_assignment (
-    id serial primary key not null,
-    se_id int not null,
+    id uuid not null default gen_random_uuid() primary key,
+    se_id uuid not null,
     completed boolean DEFAULT false,
-    assigned_to varchar(20),
+    assigned_to varchar(50),
     CONSTRAINT fk_survey_element
         FOREIGN KEY(se_id) 
             REFERENCES survey_element(id),
     CONSTRAINT fk_user
         FOREIGN KEY(assigned_to) 
-            REFERENCES surveyor(user_id)
+            REFERENCES survey_users(user_id)
 );
 
 create table survey_result(
-    id serial not null primary key,
-    sa_id int not null,
+    id uuid not null default gen_random_uuid() primary key,
+    sa_id uuid not null,
     fd_id int not null,
     X double precision not null,
     Y double precision not null,
