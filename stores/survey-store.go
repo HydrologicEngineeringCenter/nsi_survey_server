@@ -2,8 +2,6 @@ package stores
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log"
 	"strings"
 
@@ -12,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/usace/goquery"
 )
+
+var NoResults string = "no rows in result set"
 
 type SurveyStore struct {
 	DS goquery.DataStore
@@ -90,6 +90,15 @@ func (ss SurveyStore) InsertSurveyElements(elements *[]models.SurveyElement) err
 	return err
 }
 
+func (ss *SurveyStore) AssignSurvey(userId string, seId uuid.UUID) (uuid.UUID, error) {
+	var saId uuid.UUID
+	err := ss.DS.Select(surveyAssignmentTable.Statements["assignSurvey"]).
+		Params(seId, userId).
+		Dest(&saId).
+		Fetch()
+	return saId, err
+}
+
 func (ss SurveyStore) InsertSurveyAssignments(assignments *[]models.SurveyAssignment) error {
 	err := ss.DS.Insert(&surveyAssignmentTable).
 		Records(assignments).
@@ -111,30 +120,20 @@ func (ss *SurveyStore) GetReport(surveyId uuid.UUID) ([]models.SurveyResult, err
 }
 
 func (ss *SurveyStore) GetAssignmentInfo(userId string, surveyId uuid.UUID) (models.AssignmentInfo, error) {
-	ai := []models.AssignmentInfo{}
+	ai := models.AssignmentInfo{}
 	err := ss.DS.Select(surveyAssignmentTable.Statements["assignmentInfo"]).
-		Params(surveyId, userId, surveyId, surveyId, userId).
-		Dest(ai).
+		Params(userId, surveyId).
+		Dest(&ai).
 		Fetch()
 	if err != nil {
 		return models.AssignmentInfo{}, err
 	}
-	if len(ai) == 0 {
-		return models.AssignmentInfo{}, errors.New("Invalid Record")
-	}
-	if ai[0].NextSurvey == nil {
-		ns, err := ss.GetFirstSurveyInEvent(surveyId)
-		if err != nil {
-			return models.AssignmentInfo{}, err
-		}
-		ai[0].NextSurvey = &ns
-	}
-	return ai[0], err
+	return ai, err
 }
 
 func (ss *SurveyStore) GetFirstSurveyInEvent(surveyId uuid.UUID) (uuid.UUID, error) {
 	var firstSurvey uuid.UUID
-	err := ss.DS.Select("select min(id) from survey_element where survey_event_id=$1").
+	err := ss.DS.Select("select id from survey_element where survey_order=(select min(survey_order) from survey_element where survey_event_id=$1)").
 		Params(surveyId).
 		Dest(firstSurvey).
 		Fetch()
@@ -148,7 +147,7 @@ func (ss *SurveyStore) GetStructure(seId uuid.UUID, saId uuid.UUID) (models.Surv
 		Dest(&s).
 		Fetch()
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err.Error() == NoResults {
 			//no existing survey result, get survey data from nsi
 			err := ss.DS.Select(surveyTable.Statements["nsi-survey"]).
 				Params(seId, saId).
@@ -168,19 +167,6 @@ func (ss *SurveyStore) GetStructure(seId uuid.UUID, saId uuid.UUID) (models.Surv
 	}
 	log.Printf("Returning existing Survey Result for survey assignment: %d/n", saId)
 	return s, err //return survey from survey_result
-}
-
-func (ss *SurveyStore) AssignSurvey(userId string, seId int) (int, error) {
-	var saId int
-	//err := ss.DB.QueryRow(tables.Statements["assignSurvey"], seId, userId).Scan(&saId)
-	err := ss.DS.Select(surveyAssignmentTable.Statements["assignSurvey"]).
-		Params(seId, userId).
-		Dest(saId).
-		Fetch()
-	if err != nil {
-		return -1, err
-	}
-	return int(saId), nil
 }
 
 /*

@@ -9,6 +9,7 @@ import (
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
 	"github.com/USACE/microauth"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx"
 	"github.com/labstack/echo/v4"
 )
 
@@ -146,27 +147,28 @@ func (sh *SurveyHandler) GetSurveyReport(c echo.Context) error {
 	return err
 }
 
-/*
 func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 	surveyId, err := uuid.Parse(c.Param("surveyID"))
 	if err != nil {
 		return err
 	}
-	claims := c.Get("NSIUSER").(models.JwtClaim)
+	claims := c.Get("NSIUSER").(microauth.JwtClaim)
 	userId := claims.Sub
 	assignmentInfo, err := sh.store.GetAssignmentInfo(userId, surveyId)
 	if err != nil {
 		return err
 	}
-	structure := models.SurveyStructure{}
-	if assignmentInfo.Completed == nil || *assignmentInfo.Completed { //anything other than an explicit 'false'
-		nextSurvey := assignmentInfo.NextSurvey
 
-		if assignmentInfo.NextControl != nil && *assignmentInfo.NextControl < *assignmentInfo.NextSurvey {
-			nextSurvey = assignmentInfo.NextControl
+	var structure models.SurveyStructure
+	var nextSurvey *uuid.UUID
+	if assignmentInfo.Completed == nil {
+		//the user does not have any uncompleted surveys assigned.  get a new one.
+		nextSurvey = assignmentInfo.NextSurveySEID
+		if *assignmentInfo.NextControlOrder < *assignmentInfo.NextSurveyOrder {
+			nextSurvey = &assignmentInfo.NextControlSEID
 		}
-
 		saId, err := sh.store.AssignSurvey(userId, *nextSurvey)
+		fmt.Println(nextSurvey)
 		if err != nil {
 			log.Printf("Error assigning Survey: %s", err)
 			pgerr := err.(pgx.PgError)
@@ -175,22 +177,22 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 			}
 			return err
 		}
-
 		structure, err = sh.store.GetStructure(*nextSurvey, saId)
 		if err != nil {
 			return err
 		}
 
 	} else {
-		structure, err = sh.store.GetStructure(*assignmentInfo.SE_ID, *assignmentInfo.SA_ID)
+		structure, err = sh.store.GetStructure(*assignmentInfo.SEID, *assignmentInfo.SAID)
 		if err != nil {
 			return err
 		}
 	}
 	return c.JSON(http.StatusOK, structure)
+
 }
 
-
+/*
 func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
 	s := models.SurveyStructure{}
 	if err := c.Bind(&s); err != nil {
@@ -202,5 +204,4 @@ func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
 	}
 	return c.String(http.StatusOK, `{"result":"success"}`)
 }
-
 */

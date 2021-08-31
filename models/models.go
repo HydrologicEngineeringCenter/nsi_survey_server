@@ -26,12 +26,25 @@ type SurveyOwner struct {
 }
 
 type AssignmentInfo struct {
+	SAID             *uuid.UUID `db:"sa_id"`
+	SEID             *uuid.UUID `db:"se_id"`
+	Completed        *bool      `db:"completed"`
+	SurveyOrder      *int       `db:"survey_order"`
+	NextSurveyOrder  *int       `db:"next_survey_order"`
+	NextSurveySEID   *uuid.UUID `db:"next_survey_seid"`
+	NextControlOrder *int       `db:"next_control_order"`
+	NextControlSEID  uuid.UUID  `db:"next_control_seid"`
+}
+
+/*
+type AssignmentInfo struct {
 	SA_ID       *uuid.UUID `db:"sa_id"`
 	SE_ID       *uuid.UUID `db:"se_id"`
 	Completed   *bool      `db:"completed"`
 	NextSurvey  *uuid.UUID `db:"next_survey"`
 	NextControl *uuid.UUID `db:"next_control"`
 }
+*/
 
 type SurveyElement struct {
 	ID          string `json:"seId" db:"id" dbid:"AUTOINCREMENT"`
@@ -56,24 +69,24 @@ type SurveyResult struct {
 */
 
 type SurveyStructure struct {
-	SAID             int     `db:"sa_id" json:"saId"`
-	FDID             int     `db:"fd_id" json:"fdId"`
-	X                float64 `db:"x" json:"x"`
-	Y                float64 `db:"y" json:"y"`
-	InvalidStructure bool    `db:"invalid_structure" json:"invalidStructure"`
-	NoStreetView     bool    `db:"no_street_view" json:"noStreetView"`
-	CBfips           string  `db:"cbfips" json:"cbfips"`
-	OccupancyType    string  `db:"occtype" json:"occupancyType"`
-	Damcat           string  `db:"st_damcat" json:"damcat"`
-	FoundHt          float64 `db:"found_ht" json:"found_ht"`
-	Stories          float64 `db:"num_story" json:"stories"`
-	SqFt             float64 `db:"sqft" json:"sq_ft"`
-	FoundType        string  `db:"found_type" json:"found_type"`
-	RsmeansType      string  `db:"rsmeans_type" json:"rsmeans_type"`
-	Quality          string  `db:"quality" json:"quality"`
-	ConstType        string  `db:"const_type" json:"const_type"`
-	Garage           string  `db:"garage" json:"garage"`
-	RoofStyle        string  `db:"roof_style" json:"roof_style"`
+	SAID             uuid.UUID `db:"sa_id" json:"saId"`
+	FDID             int       `db:"fd_id" json:"fdId"`
+	X                float64   `db:"x" json:"x"`
+	Y                float64   `db:"y" json:"y"`
+	InvalidStructure bool      `db:"invalid_structure" json:"invalidStructure"`
+	NoStreetView     bool      `db:"no_street_view" json:"noStreetView"`
+	CBfips           string    `db:"cbfips" json:"cbfips"`
+	OccupancyType    string    `db:"occtype" json:"occupancyType"`
+	Damcat           string    `db:"st_damcat" json:"damcat"`
+	FoundHt          float64   `db:"found_ht" json:"found_ht"`
+	Stories          float64   `db:"num_story" json:"stories"`
+	SqFt             float64   `db:"sqft" json:"sq_ft"`
+	FoundType        string    `db:"found_type" json:"found_type"`
+	RsmeansType      string    `db:"rsmeans_type" json:"rsmeans_type"`
+	Quality          string    `db:"quality" json:"quality"`
+	ConstType        string    `db:"const_type" json:"const_type"`
+	Garage           string    `db:"garage" json:"garage"`
+	RoofStyle        string    `db:"roof_style" json:"roof_style"`
 }
 
 type SurveyResult struct {
@@ -93,7 +106,7 @@ func (sr SurveyResult) String() []string {
 		fmt.Sprintf(`"%s"`, sr.UserName),
 		strconv.FormatBool(sr.Completed),
 		strconv.FormatBool(sr.IsControl),
-		strconv.Itoa(sr.SAID),
+		sr.SAID.String(),
 		strconv.Itoa(sr.FDID),
 		strconv.FormatFloat(sr.X, 'f', 8, 64),
 		strconv.FormatFloat(sr.Y, 'f', 8, 64),

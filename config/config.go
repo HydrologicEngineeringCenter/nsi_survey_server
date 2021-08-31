@@ -9,6 +9,8 @@ type Config struct {
 	Dbpass        string
 	Dbname        string
 	Dbhost        string
+	Dbstore       string
+	Dbdriver      string
 	DBSSLMode     string
 	Dbport        string
 	Ippk          string
@@ -17,10 +19,12 @@ type Config struct {
 
 func (c *Config) Rdbmsconfig() dq.RdbmsConfig {
 	return dq.RdbmsConfig{
-		Dbuser: c.Dbuser,
-		Dbpass: c.Dbpass,
-		Dbhost: c.Dbhost,
-		Dbport: c.Dbport,
-		Dbname: c.Dbname,
+		Dbuser:   c.Dbuser,
+		Dbpass:   c.Dbpass,
+		Dbhost:   c.Dbhost,
+		Dbport:   c.Dbport,
+		Dbname:   c.Dbname,
+		DbDriver: c.Dbdriver,
+		DbStore:  c.Dbstore,
 	}
 }

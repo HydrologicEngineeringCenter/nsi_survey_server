@@ -16,7 +16,7 @@ import (
 
 // Config holds all runtime configuration provided via environment variables
 
-const urlPrefix = "nsiapi"
+const urlPrefix = "nsisapi"
 
 func main() {
 	var cfg config.Config
@@ -44,7 +44,7 @@ func main() {
 
 	// Public Routes
 	e.GET(urlPrefix+"/version", surveyHandler.Version)
-	//e.GET(urlPrefix+"/survey", surveyHandler.GetSurvey)
+	e.GET(urlPrefix+"/survey", surveyHandler.GetSurvey)
 	//e.POST(urlPrefix+"/survey", surveyHandler.SaveSurvey)
 	//e.GET(urlPrefix+"/reports/surveys/:eventID", surveyHandler.GetSurveyReport)
 	//e.GET(urlPrefix+"/survey/create", surveyHandler.CreateNewSurvey)

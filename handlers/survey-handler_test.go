@@ -14,10 +14,10 @@ import (
 	"github.com/usace/goquery"
 )
 
-var newSurveyId string = "2c97b020-d185-453c-93b8-ab7879f4a620"
+var newSurveyId string = "b4dd9464-a0a6-4a9e-b793-935920dccc46"
 
 func TestCreateSurvey(t *testing.T) {
-	createJSON := `{"title":"Survey 2","description":"This is a description of survey 2","active":true}`
+	createJSON := `{"title":"Survey Test","description":"This is a description of the test survey","active":true}`
 	rec, c := buildContext(http.MethodPost, createJSON)
 	h := buildHandler(t)
 	if assert.NoError(t, h.CreateNewSurvey(c)) {
@@ -32,7 +32,7 @@ func TestCreateSurvey(t *testing.T) {
 
 func TestUpdateSurvey(t *testing.T) {
 	t.Log(newSurveyId)
-	updateJSON := fmt.Sprintf(`{"id":"%s","title":"Survey Updated","description":"This is a description of survey edited","active":false}`, newSurveyId)
+	updateJSON := fmt.Sprintf(`{"id":"%s","title":"Survey Test Updated","description":"This is a description of survey edited","active":false}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, updateJSON)
 	h := buildHandler(t)
 	if assert.NoError(t, h.UpdateSurvey(c)) {
@@ -42,7 +42,17 @@ func TestUpdateSurvey(t *testing.T) {
 
 func TestAddSurveyOwner(t *testing.T) {
 	t.Log(newSurveyId)
-	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"9876543"}`, newSurveyId)
+	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"987654"}`, newSurveyId)
+	rec, c := buildContext(http.MethodPost, payload)
+	h := buildHandler(t)
+	if assert.NoError(t, h.AddSurveyOwner(c)) {
+		assert.Equal(t, http.StatusCreated, rec.Code)
+	}
+}
+
+func TestAddSecondSurveyOwner(t *testing.T) {
+	t.Log(newSurveyId)
+	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"887654"}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload)
 	h := buildHandler(t)
 	if assert.NoError(t, h.AddSurveyOwner(c)) {
@@ -64,12 +74,18 @@ func TestRemoveSurveyOwner(t *testing.T) {
 
 func TestInsertSurveyElements(t *testing.T) {
 	t.Log(newSurveyId)
-	payload := `
+	payload := fmt.Sprintf(`
 	[
-		{"surveyId":"2c97b020-d185-453c-93b8-ab7879f4a620","surveyOrder":1,"fdId":1234, "isControl":false},
-		{"surveyId":"2c97b020-d185-453c-93b8-ab7879f4a620","surveyOrder":2,"fdId":1235, "isControl":true},
-		{"surveyId":"2c97b020-d185-453c-93b8-ab7879f4a620","surveyOrder":3,"fdId":1236, "isControl":false}
-	]`
+		{"surveyId":"%s","surveyOrder":1,"fdId":95009, "isControl":false},
+		{"surveyId":"%s","surveyOrder":2,"fdId":95008, "isControl":false},
+		{"surveyId":"%s","surveyOrder":3,"fdId":95007, "isControl":false},
+		{"surveyId":"%s","surveyOrder":4,"fdId":95006, "isControl":false},
+		{"surveyId":"%s","surveyOrder":5,"fdId":95005, "isControl":true},
+		{"surveyId":"%s","surveyOrder":6,"fdId":95004, "isControl":false},
+		{"surveyId":"%s","surveyOrder":7,"fdId":95003, "isControl":true},
+		{"surveyId":"%s","surveyOrder":8,"fdId":95002, "isControl":false},
+		{"surveyId":"%s","surveyOrder":9,"fdId":95001, "isControl":false},
+	]`, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload)
 	h := buildHandler(t)
 	if assert.NoError(t, h.InsertSurveyElements(c)) {
@@ -91,6 +107,18 @@ func TestInsertSurveyAssignments(t *testing.T) {
 	}
 }
 
+func TestGetSurveyAssignment(t *testing.T) {
+	t.Log(newSurveyId)
+	rec, c := buildContext(http.MethodGet, "")
+	c.SetParamNames("surveyID")
+	c.SetParamValues(newSurveyId)
+	h := buildHandler(t)
+	if assert.NoError(t, h.GetSurvey(c)) {
+		fmt.Println(rec.Body.String())
+		assert.Equal(t, http.StatusOK, rec.Code)
+	}
+}
+
 /////Private support methods///////
 
 func getDataStore(t *testing.T) goquery.DataStore {
@@ -109,7 +137,7 @@ func getSurveyStore(t *testing.T) *stores.SurveyStore {
 
 func getClaims() microauth.JwtClaim {
 	claims := microauth.JwtClaim{
-		Sub:      "12345678",
+		Sub:      "987654",
 		Aud:      []string{"nsi-survey"},
 		UserName: "Test User",
 	}
