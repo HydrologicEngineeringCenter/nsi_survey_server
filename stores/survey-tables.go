@@ -7,27 +7,33 @@ import (
 
 var surveyTable = dq.TableDataSet{
 	Statements: map[string]string{
-		"selectById":   `select * from survey where id=$1`,
-		"insert":       `insert into survey (title,description,active) values ($1,$2,$3) returning id`,
-		"insert-owner": `insert into survey_owner(survey_id,user_id) values ($1,$2)`,
-		"update":       `update survey set title=$1,description=$2,active=$3 where id=$4`,
+		"selectById": `select * from survey where id=$1`,
+		"insert":     `insert into survey (title,description,active) values ($1,$2,$3) returning id`,
+		"update":     `update survey set title=$1,description=$2,active=$3 where id=$4`,
 		"nsi-survey": `select $2::uuid as sa_id, false as invalid_structure, false as no_street_view,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0.0 as num_story, 0.0 as sqft,found_type,
 						'' as rsmeans_type, '' as quality, '' as const_type, '' as garage, '' as roof_style
 						from nsi.nsi where fd_id=(select fd_id from survey_element where id=$1)`,
 		"survey": `select sa_id, fd_id,x,y,invalid_structure,no_street_view,cbfips,occtype,st_damcat,found_ht,num_story,sqft,
 					found_type,rsmeans_type,quality,const_type,garage,roof_style
 					from survey_result where sa_id=$1`,
+		"user-surveys": `select distinct s.id,s.title,s.description,s.active
+							from survey s
+							left outer join survey_owner so on so.survey_id=s.id
+							left outer join survey_member sm on sm.survey_id=s.id
+							where so.user_id=$1 or sm.user_id=$1`,
 	},
 	Fields: models.Survey{},
 }
 
-var surveyOwnerTable = dq.TableDataSet{
+var surveyMemberTable = dq.TableDataSet{
 	Statements: map[string]string{
-		"insert":        `insert into survey_owner(survey_id,user_id) values ($1,$2)`,
-		"select_owners": "select * from survey_owner where survey_id=$1",
-		"remove":        `delete from survey_owner where id=$1`,
+		"upsert": `insert into survey_member(survey_id,user_id,is_owner) values ($1,$2,$3)
+		                   ON CONFLICT(survey_id,user_id) do 
+						  update set is_owner=EXCLUDED.is_owner`,
+		"select_owners": "select * from survey_member where survey_id=$1",
+		"remove":        `delete from survey_member where id=$1`,
 	},
-	Fields: models.SurveyOwner{},
+	Fields: models.SurveyMember{},
 }
 
 var surveyElementTable = dq.TableDataSet{
@@ -82,7 +88,7 @@ var surveyAssignmentTable = dq.TableDataSet{
 	Fields: models.SurveyAssignment{},
 }
 
-var miscQueries = dq.TableDataSet{
+var resultTable = dq.TableDataSet{
 	Statements: map[string]string{
 
 		"nsi_survey": `select $2::uuid as sa_id, false as invalid_structure, false as no_street_view,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0 as num_story, 0.0 as sqft,found_type,

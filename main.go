@@ -45,7 +45,8 @@ func main() {
 	// Public Routes
 	e.GET(urlPrefix+"/version", surveyHandler.Version)
 	e.GET(urlPrefix+"/survey", surveyHandler.GetSurvey)
-	//e.POST(urlPrefix+"/survey", surveyHandler.SaveSurvey)
+	e.POST(urlPrefix+"/survey", surveyHandler.CreateNewSurvey)
+	//e.POST(urlPrefix+"/survey/:surveyId", surveyHandler.)
 	//e.GET(urlPrefix+"/reports/surveys/:eventID", surveyHandler.GetSurveyReport)
 	//e.GET(urlPrefix+"/survey/create", surveyHandler.CreateNewSurvey)
 

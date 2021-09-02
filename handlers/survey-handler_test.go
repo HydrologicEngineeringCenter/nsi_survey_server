@@ -40,34 +40,32 @@ func TestUpdateSurvey(t *testing.T) {
 	}
 }
 
-func TestAddSurveyOwner(t *testing.T) {
+func TestInsertSurveyMember(t *testing.T) {
 	t.Log(newSurveyId)
-	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"987654"}`, newSurveyId)
+	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"987654","isOwner",false}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload)
 	h := buildHandler(t)
-	if assert.NoError(t, h.AddSurveyOwner(c)) {
+	if assert.NoError(t, h.UpsertSurveyMember(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
 	}
 }
 
-func TestAddSecondSurveyOwner(t *testing.T) {
+func TestUpdateSurveyMember(t *testing.T) {
 	t.Log(newSurveyId)
-	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"887654"}`, newSurveyId)
+	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"987654","isOwner",true}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload)
 	h := buildHandler(t)
-	if assert.NoError(t, h.AddSurveyOwner(c)) {
+	if assert.NoError(t, h.UpsertSurveyMember(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
 	}
 }
 
-func TestRemoveSurveyOwner(t *testing.T) {
+func TestInsertSecondSurveyMember(t *testing.T) {
 	t.Log(newSurveyId)
-	payload := ""
+	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"887654","isOwner",true}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload)
-	c.SetParamNames("surveyOwnerId")
-	c.SetParamValues("fe311b7a-1b17-49a7-bf25-425240717c39")
 	h := buildHandler(t)
-	if assert.NoError(t, h.RemoveSurveyOwner(c)) {
+	if assert.NoError(t, h.UpsertSurveyMember(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
 	}
 }

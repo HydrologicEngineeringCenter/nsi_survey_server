@@ -5,12 +5,6 @@ create table survey (
     active boolean
 );
 
-create table survey_owner(
-   id uuid not null default gen_random_uuid() primary key,
-   survey_id uuid not null,
-   user_id varchar(50) not null 
-);
-
 create table survey_element (
     id uuid not null default gen_random_uuid() primary key,
     survey_id uuid not null,
@@ -19,9 +13,19 @@ create table survey_element (
     is_control boolean default false
 );
 
-create table survey_users(
+create table users(
     user_id varchar(50) not null primary key,
     user_name text not null
+);
+
+create table survey_members(
+    id uuid not null default gen_random_uuid() primary key,
+    survey_id uuid not null,
+    user_id varchar(50) not null,
+    is_owner bool not null default false,
+    CONSTRAINT fk_sm_user
+        FOREIGN KEY(user_id) 
+            REFERENCES users(user_id)
 );
 
 create table survey_assignment (
@@ -34,7 +38,7 @@ create table survey_assignment (
             REFERENCES survey_element(id),
     CONSTRAINT fk_user
         FOREIGN KEY(assigned_to) 
-            REFERENCES survey_users(user_id)
+            REFERENCES users(user_id)
 );
 
 create table survey_result(

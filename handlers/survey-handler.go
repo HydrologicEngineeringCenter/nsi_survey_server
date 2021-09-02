@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
@@ -12,6 +14,8 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/labstack/echo/v4"
 )
+
+var defaultUuid uuid.UUID
 
 type SurveyHandler struct {
 	store *stores.SurveyStore
@@ -60,12 +64,24 @@ func (sh *SurveyHandler) UpdateSurvey(c echo.Context) error {
 	return c.String(http.StatusOK, "")
 }
 
-func (sh *SurveyHandler) AddSurveyOwner(c echo.Context) error {
-	var surveyOwner = models.SurveyOwner{}
-	if err := c.Bind(&surveyOwner); err != nil {
+func (sh *SurveyHandler) GetSurveyMembers(c echo.Context) error {
+	surveyId, err := uuid.Parse(c.Param("surveyid"))
+	if err != nil {
 		return err
 	}
-	err := sh.store.AddSurveyOwner(surveyOwner)
+	members, err := sh.store.GetSurveyMembers(surveyId)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, &members)
+}
+
+func (sh *SurveyHandler) UpsertSurveyMember(c echo.Context) error {
+	var surveyMember = models.SurveyMember{}
+	if err := c.Bind(&surveyMember); err != nil {
+		return err
+	}
+	err := sh.store.UpsertSurveyMember(surveyMember)
 	if err != nil {
 		log.Printf("Error adding survey owner: %s", err)
 		return err
@@ -73,15 +89,14 @@ func (sh *SurveyHandler) AddSurveyOwner(c echo.Context) error {
 	return c.String(http.StatusCreated, "")
 }
 
-func (sh *SurveyHandler) RemoveSurveyOwner(c echo.Context) error {
-	id, err := uuid.Parse(c.Param("surveyOwnerId"))
+func (sh *SurveyHandler) RemoveSurveyMember(c echo.Context) error {
+	memberId, err := uuid.Parse(c.Param("memberid"))
 	if err != nil {
-		log.Printf("Invalid Survey Owner Record ID: %s\n", err)
 		return err
 	}
-	err = sh.store.RemoveSurveyOwner(id)
+	err = sh.store.RemoveSurveyMember(memberId)
 	if err != nil {
-		log.Printf("Error removing survey owner: %s", err)
+		log.Printf("Error removing survey member: %s", err)
 		return err
 	}
 	return c.String(http.StatusCreated, "")
@@ -147,6 +162,16 @@ func (sh *SurveyHandler) GetSurveyReport(c echo.Context) error {
 	return err
 }
 
+func (sh *SurveyHandler) GetSurveysForUser(c echo.Context) error {
+	claims := c.Get("NSIUSER").(microauth.JwtClaim)
+	userId := claims.Sub
+	surveys, err := sh.store.GetSurveysforUser(userId)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, surveys)
+}
+
 func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 	surveyId, err := uuid.Parse(c.Param("surveyID"))
 	if err != nil {
@@ -192,7 +217,6 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 
 }
 
-/*
 func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
 	s := models.SurveyStructure{}
 	if err := c.Bind(&s); err != nil {
@@ -204,4 +228,23 @@ func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
 	}
 	return c.String(http.StatusOK, `{"result":"success"}`)
 }
-*/
+
+func (sh *SurveyHandler) SearchUsers(c echo.Context) error {
+
+	q := c.QueryParam("q")
+	r := c.QueryParam("r")
+	p := c.QueryParam("p")
+
+	rows, errRow := strconv.Atoi(r)
+	page, errPage := strconv.Atoi(p)
+	if q == "" || errRow != nil || errPage != nil {
+		return errors.New("Invalid Query Parameters")
+	}
+	users, err := sh.store.DS.Select("select * from users where username like $1 limit $2 offset $3").
+		Params("%"+q+"%", rows, rows*page).
+		FetchJSON()
+	if err != nil {
+		return err
+	}
+	return c.JSONBlob(http.StatusOK, users)
+}

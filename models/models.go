@@ -19,10 +19,26 @@ type Survey struct {
 	Active      bool      `db:"active" json:"active"`
 }
 
+/*
 type SurveyOwner struct {
 	ID       uuid.UUID `db:"id" json:"id"`
 	SurveyID uuid.UUID `db:"survey_id" json:"surveyId"`
 	UserID   string    `db:"user_id" json:"userId"`
+}
+
+type SurveyMemberVw struct {
+	SurveyId uuid.UUID `db:"survey_id" json:"surveyId"`
+	UserId   string    `db:"user_id" json:"userId"`
+	UserName string    `db:"user_name" json:"userName"`
+	Owner    bool      `db:"owner" json:"owner"`
+}
+*/
+
+type SurveyMember struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	SurveyID uuid.UUID `db:"survey_id" json:"surveyId"`
+	UserID   string    `db:"user_id" json:"userId"`
+	IsOwner  bool      `db:"is_owner" json:"isOwner"`
 }
 
 type AssignmentInfo struct {
@@ -35,16 +51,6 @@ type AssignmentInfo struct {
 	NextControlOrder *int       `db:"next_control_order"`
 	NextControlSEID  uuid.UUID  `db:"next_control_seid"`
 }
-
-/*
-type AssignmentInfo struct {
-	SA_ID       *uuid.UUID `db:"sa_id"`
-	SE_ID       *uuid.UUID `db:"se_id"`
-	Completed   *bool      `db:"completed"`
-	NextSurvey  *uuid.UUID `db:"next_survey"`
-	NextControl *uuid.UUID `db:"next_control"`
-}
-*/
 
 type SurveyElement struct {
 	ID          string `json:"seId" db:"id" dbid:"AUTOINCREMENT"`

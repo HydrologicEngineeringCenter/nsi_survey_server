@@ -30,6 +30,28 @@ func CreateSurveyStore(appConfig *config.Config) (*SurveyStore, error) {
 	return &ss, nil
 }
 
+func (ss *SurveyStore) GetSurveysforUser(userId string) (*[]models.Survey, error) {
+	surveys := []models.Survey{}
+	err := ss.DS.Select().
+		DataSet(&surveyTable).
+		StatementKey("user-surveys").
+		Params(userId).
+		Dest(&surveys).
+		Fetch()
+	return &surveys, err
+}
+
+func (ss *SurveyStore) GetSurveyMembers(surveyId uuid.UUID) (*[]models.Survey, error) {
+	surveys := []models.Survey{}
+	err := ss.DS.Select().
+		DataSet(&surveyTable).
+		StatementKey("members").
+		Params(surveyId).
+		Dest(&surveys).
+		Fetch()
+	return &surveys, err
+}
+
 func (ss *SurveyStore) GetSurvey(surveyId uuid.UUID) (models.Survey, error) {
 	survey := models.Survey{}
 	err := ss.DS.Select().
@@ -69,13 +91,13 @@ func (ss *SurveyStore) UpdateSurvey(survey models.Survey) error {
 	return err
 }
 
-func (ss *SurveyStore) AddSurveyOwner(owner models.SurveyOwner) error {
-	err := ss.DS.Exec(goquery.NoTx, surveyOwnerTable.Statements["insert"], owner.SurveyID, owner.UserID)
+func (ss *SurveyStore) UpsertSurveyMember(member models.SurveyMember) error {
+	err := ss.DS.Exec(goquery.NoTx, surveyMemberTable.Statements["upsers"], member.SurveyID, member.UserID, member.IsOwner)
 	return err
 }
 
-func (ss *SurveyStore) RemoveSurveyOwner(id uuid.UUID) error {
-	err := ss.DS.Exec(goquery.NoTx, surveyOwnerTable.Statements["remove"], id)
+func (ss *SurveyStore) RemoveSurveyMember(memberId uuid.UUID) error {
+	err := ss.DS.Exec(goquery.NoTx, surveyMemberTable.Statements["remove"], memberId)
 	return err
 }
 
@@ -112,7 +134,7 @@ func (ss SurveyStore) InsertSurveyAssignments(assignments *[]models.SurveyAssign
 
 func (ss *SurveyStore) GetReport(surveyId uuid.UUID) ([]models.SurveyResult, error) {
 	s := []models.SurveyResult{}
-	err := ss.DS.Select(miscQueries.Statements["surveyReport"]).
+	err := ss.DS.Select(resultTable.Statements["surveyReport"]).
 		Params(surveyId).
 		Dest(s).
 		Fetch()
@@ -169,15 +191,14 @@ func (ss *SurveyStore) GetStructure(seId uuid.UUID, saId uuid.UUID) (models.Surv
 	return s, err //return survey from survey_result
 }
 
-/*
 func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
 	err := goquery.Transaction(ss.DS, func(tx goquery.Tx) {
-		_, txerr := tx.NamedExec(tables.Statements["upsertSurveyStructure"], survey)
+		pgtx := tx.PgxTx()
+		_, txerr := pgtx.Exec(context.Background(), resultTable.Statements["upsertSurveyStructure"], survey)
 		if txerr != nil {
 			panic(txerr)
 		}
-		tx.MustExec(tables.Statements["updateAssignment"], survey.SAID)
+		pgtx.Exec(context.Background(), resultTable.Statements["updateAssignment"], survey.SAID)
 	})
 	return err
 }
-*/
