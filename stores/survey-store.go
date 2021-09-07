@@ -30,6 +30,10 @@ func CreateSurveyStore(appConfig *config.Config) (*SurveyStore, error) {
 	return &ss, nil
 }
 
+func (ss *SurveyStore) AddUser(user models.User) error {
+	return ss.DS.Exec(goquery.NoTx, usersTable.Statements["insert"], user.UserID, user.Username)
+}
+
 func (ss *SurveyStore) GetSurveysforUser(userId string) (*[]models.Survey, error) {
 	surveys := []models.Survey{}
 	err := ss.DS.Select().
@@ -78,7 +82,7 @@ func (ss *SurveyStore) CreateNewSurvey(survey models.Survey, userId string) (uui
 			panic(err)
 		}
 		ptx := tx.PgxTx()
-		_, err = ptx.Exec(context.Background(), surveyTable.Statements["insert-owner"], surveyId, userId)
+		_, err = ptx.Exec(context.Background(), surveyTable.Statements["insert-owner"], surveyId, userId, true)
 		if err != nil {
 			panic(err)
 		}
@@ -92,7 +96,7 @@ func (ss *SurveyStore) UpdateSurvey(survey models.Survey) error {
 }
 
 func (ss *SurveyStore) UpsertSurveyMember(member models.SurveyMember) error {
-	err := ss.DS.Exec(goquery.NoTx, surveyMemberTable.Statements["upsers"], member.SurveyID, member.UserID, member.IsOwner)
+	err := ss.DS.Exec(goquery.NoTx, surveyMemberTable.Statements["upsert"], member.SurveyID, member.UserID, member.IsOwner)
 	return err
 }
 
@@ -147,9 +151,11 @@ func (ss *SurveyStore) GetAssignmentInfo(userId string, surveyId uuid.UUID) (mod
 		Params(userId, surveyId).
 		Dest(&ai).
 		Fetch()
-	if err != nil {
-		return models.AssignmentInfo{}, err
+
+	if err != nil && err.Error() == NoResults {
+		err = nil
 	}
+
 	return ai, err
 }
 
@@ -179,7 +185,6 @@ func (ss *SurveyStore) GetStructure(seId uuid.UUID, saId uuid.UUID) (models.Surv
 				log.Printf("Failed to retrieve structure: %s/n", err)
 				return s, err
 			}
-			log.Printf("Returning NSI Data for survey assignment: %d/n", saId)
 			s.OccupancyType = strings.Split(s.OccupancyType, "-")[0]
 			return s, nil
 		} else {
@@ -194,11 +199,17 @@ func (ss *SurveyStore) GetStructure(seId uuid.UUID, saId uuid.UUID) (models.Surv
 func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
 	err := goquery.Transaction(ss.DS, func(tx goquery.Tx) {
 		pgtx := tx.PgxTx()
-		_, txerr := pgtx.Exec(context.Background(), resultTable.Statements["upsertSurveyStructure"], survey)
+		_, txerr := pgtx.Exec(context.Background(), resultTable.Statements["upsertSurveyStructure"],
+			survey.SAID, survey.FDID, survey.X, survey.Y, survey.InvalidStructure, survey.NoStreetView,
+			survey.CBfips, survey.OccupancyType, survey.Damcat, survey.FoundHt, survey.Stories, survey.SqFt,
+			survey.FoundType, survey.RsmeansType, survey.Quality, survey.ConstType, survey.Garage, survey.RoofStyle)
 		if txerr != nil {
 			panic(txerr)
 		}
-		pgtx.Exec(context.Background(), resultTable.Statements["updateAssignment"], survey.SAID)
+		_, txerr = pgtx.Exec(context.Background(), surveyAssignmentTable.Statements["updateAssignment"], survey.SAID)
+		if txerr != nil {
+			panic(txerr)
+		}
 	})
 	return err
 }

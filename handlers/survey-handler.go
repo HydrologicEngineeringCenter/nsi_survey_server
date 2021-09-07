@@ -83,7 +83,7 @@ func (sh *SurveyHandler) UpsertSurveyMember(c echo.Context) error {
 	}
 	err := sh.store.UpsertSurveyMember(surveyMember)
 	if err != nil {
-		log.Printf("Error adding survey owner: %s", err)
+		log.Printf("Error adding survey member: %s", err)
 		return err
 	}
 	return c.String(http.StatusCreated, "")
@@ -189,24 +189,26 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 	if assignmentInfo.Completed == nil {
 		//the user does not have any uncompleted surveys assigned.  get a new one.
 		nextSurvey = assignmentInfo.NextSurveySEID
-		if *assignmentInfo.NextControlOrder < *assignmentInfo.NextSurveyOrder {
+		if assignmentInfo.NextControlOrder != nil && assignmentInfo.NextSurveyOrder != nil &&
+			*assignmentInfo.NextControlOrder < *assignmentInfo.NextSurveyOrder {
 			nextSurvey = &assignmentInfo.NextControlSEID
 		}
-		saId, err := sh.store.AssignSurvey(userId, *nextSurvey)
-		fmt.Println(nextSurvey)
-		if err != nil {
-			log.Printf("Error assigning Survey: %s", err)
-			pgerr := err.(pgx.PgError)
-			if pgerr.Code == "23503" && pgerr.TableName == "survey_assignment" {
-				return c.String(200, `{"result":"completed"}`) //this should only occur when we are out of surveys
+		if nextSurvey != nil {
+			saId, err := sh.store.AssignSurvey(userId, *nextSurvey)
+			fmt.Println(nextSurvey)
+			if err != nil {
+				log.Printf("Error assigning Survey: %s", err)
+				pgerr := err.(pgx.PgError)
+				if pgerr.Code == "23503" && pgerr.TableName == "survey_assignment" {
+					return c.String(200, `{"result":"completed"}`) //this should only occur when we are out of surveys
+				}
+				return err
 			}
-			return err
+			structure, err = sh.store.GetStructure(*nextSurvey, saId)
+			if err != nil {
+				return err
+			}
 		}
-		structure, err = sh.store.GetStructure(*nextSurvey, saId)
-		if err != nil {
-			return err
-		}
-
 	} else {
 		structure, err = sh.store.GetStructure(*assignmentInfo.SEID, *assignmentInfo.SAID)
 		if err != nil {

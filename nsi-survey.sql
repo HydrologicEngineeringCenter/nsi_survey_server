@@ -18,11 +18,12 @@ create table users(
     user_name text not null
 );
 
-create table survey_members(
+create table survey_member(
     id uuid not null default gen_random_uuid() primary key,
     survey_id uuid not null,
     user_id varchar(50) not null,
     is_owner bool not null default false,
+    UNIQUE(survey_id,user_id),
     CONSTRAINT fk_sm_user
         FOREIGN KEY(user_id) 
             REFERENCES users(user_id)
@@ -68,20 +69,17 @@ create table survey_result(
     
 );
 
-CREATE UNIQUE INDEX CONCURRENTLY idx_sr_said ON survey_result (sa_id);
+CREATE UNIQUE INDEX idx_sr_said ON survey_result (sa_id);
 ALTER TABLE survey_result ADD CONSTRAINT unique_sa_id UNIQUE USING INDEX idx_sr_said;
 
---drop table survey_result;
---drop table survey_assignment;
---drop table surveyor;
---drop table suvey_element;
+
+
+insert into users values ('987654','Randy Goss');
+insert into users values ('987655','Will Lehman');
+insert into users values ('987656','Nick Lutz');
+insert into users values ('987657','Jack Goss');
 
 /*
-insert into surveyor values ('rr','Randy Goss');
-insert into surveyor values ('ww','Will Lehman');
-insert into surveyor values ('nn','Nick Lutz');
-insert into surveyor values ('jj','Jack Goss');
-
 insert into survey_element (fd_id,is_control) values (9,false);
 insert into survey_element (fd_id,is_control) values (8,false);
 insert into survey_element (fd_id,is_control) values (7,false);
@@ -99,18 +97,4 @@ insert into survey_assignment (se_id,assigned_to,completed) values (4,'ww',false
 insert into survey_assignment (se_id,assigned_to,completed) values (5,'rr',true);
 insert into survey_assignment (se_id,assigned_to,completed) values (6,'rr',false);
 insert into survey_assignment (se_id,assigned_to,completed) values (5,'nn',true);
-
-select distinct
-  t1.id as sa_id, 
-  t1.se_id,
-  t1.completed,
-  (select (max(se_id)+1) from survey_assignment) as next_survey,
-  (select min(t1.id) from survey_element t1 
-      left outer join (select * from survey_assignment where assigned_to='nn') t2 on t1.id=t2.se_id
-      where assigned_to is null and is_control='true') as next_control
-from survey_element t2
-left outer join survey_assignment t1 on t1.se_id=t2.id
-where t1.id=(select max(id) from survey_assignment where assigned_to='nn') or t1.id is null
-order by t1.id;
-
 */

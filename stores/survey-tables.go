@@ -21,8 +21,15 @@ var surveyTable = dq.TableDataSet{
 							left outer join survey_owner so on so.survey_id=s.id
 							left outer join survey_member sm on sm.survey_id=s.id
 							where so.user_id=$1 or sm.user_id=$1`,
+		"insert-owner": `insert into survey_member (survey_id,user_id,is_owner) values ($1,$2,$3)`,
 	},
 	Fields: models.Survey{},
+}
+
+var usersTable = dq.TableDataSet{
+	Statements: map[string]string{
+		"insert": `insert into users values ($1,$2)`,
+	},
 }
 
 var surveyMemberTable = dq.TableDataSet{
@@ -79,11 +86,11 @@ var surveyAssignmentTable = dq.TableDataSet{
 											where assigned_to is null and is_control='true' and survey_id=$2) as next_control_order
 								) next_assignment
 								inner join survey_element se1 on se1.survey_order=next_assignment.next_survey_order
-								inner join survey_element se2 on se2.survey_order=next_assignment.next_control_order
-								where se1.survey_id=$2 and se2.survey_id=$2
+								left outer join survey_element se2 on se2.survey_order=next_assignment.next_control_order
+								where se1.survey_id=$2 and (se2.survey_id=$2  or se2.survey_id is null)
 							) assignment_query
 	
-							order by survey_order limit 1;`,
+							order by survey_order limit 1`,
 	},
 	Fields: models.SurveyAssignment{},
 }
@@ -97,7 +104,7 @@ var resultTable = dq.TableDataSet{
 
 		"upsertSurveyStructure": `insert into survey_result
 									(sa_id,fd_id,x,y,invalid_structure,no_street_view,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,rsmeans_type,quality,const_type,garage,roof_style)
-									values (:sa_id,:fd_id,:x,:y,:invalid_structure,:no_street_view,:cbfips,:occtype,:st_damcat,:found_ht,:num_story,:sqft,:found_type,:rsmeans_type,:quality,:const_type,:garage,:roof_style)
+									values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
 									ON CONFLICT (sa_id)
 									DO UPDATE SET x=EXCLUDED.x,y=EXCLUDED.y,invalid_structure=EXCLUDED.invalid_structure,no_street_view=EXCLUDED.no_street_view, cbfips=EXCLUDED.cbfips,
 													occtype=EXCLUDED.occtype,st_damcat=EXCLUDED.st_damcat,found_ht=EXCLUDED.found_ht,num_story=EXCLUDED.num_story,

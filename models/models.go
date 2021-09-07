@@ -19,21 +19,10 @@ type Survey struct {
 	Active      bool      `db:"active" json:"active"`
 }
 
-/*
-type SurveyOwner struct {
-	ID       uuid.UUID `db:"id" json:"id"`
-	SurveyID uuid.UUID `db:"survey_id" json:"surveyId"`
-	UserID   string    `db:"user_id" json:"userId"`
+type User struct {
+	UserID   string `db:"user_id" json:"userId"`
+	Username string `db:"user_name" json:"userName"`
 }
-
-type SurveyMemberVw struct {
-	SurveyId uuid.UUID `db:"survey_id" json:"surveyId"`
-	UserId   string    `db:"user_id" json:"userId"`
-	UserName string    `db:"user_name" json:"userName"`
-	Owner    bool      `db:"owner" json:"owner"`
-}
-*/
-
 type SurveyMember struct {
 	ID       uuid.UUID `db:"id" json:"id"`
 	SurveyID uuid.UUID `db:"survey_id" json:"surveyId"`
@@ -67,13 +56,6 @@ type SurveyAssignment struct {
 	Assigned         string `json:"assignedTo" db:"assigned_to"`
 }
 
-/*
-type SurveyResult struct {
-	ID    string `json:"sr_id"`
-	FD_ID string `json:"fd_id"`
-}
-*/
-
 type SurveyStructure struct {
 	SAID             uuid.UUID `db:"sa_id" json:"saId"`
 	FDID             int       `db:"fd_id" json:"fdId"`
@@ -85,7 +67,7 @@ type SurveyStructure struct {
 	OccupancyType    string    `db:"occtype" json:"occupancyType"`
 	Damcat           string    `db:"st_damcat" json:"damcat"`
 	FoundHt          float64   `db:"found_ht" json:"found_ht"`
-	Stories          float64   `db:"num_story" json:"stories"`
+	Stories          int       `db:"num_story" json:"stories"`
 	SqFt             float64   `db:"sqft" json:"sq_ft"`
 	FoundType        string    `db:"found_type" json:"found_type"`
 	RsmeansType      string    `db:"rsmeans_type" json:"rsmeans_type"`
@@ -122,7 +104,7 @@ func (sr SurveyResult) String() []string {
 		fmt.Sprintf(`"%s"`, sr.OccupancyType),
 		fmt.Sprintf(`"%s"`, sr.Damcat),
 		strconv.FormatFloat(sr.FoundHt, 'f', 4, 64),
-		strconv.FormatFloat(sr.Stories, 'f', 4, 64),
+		strconv.Itoa(sr.Stories),
 		strconv.FormatFloat(sr.SqFt, 'f', 4, 64),
 		fmt.Sprintf(`"%s"`, sr.FoundType),
 		fmt.Sprintf(`"%s"`, sr.RsmeansType),
