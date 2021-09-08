@@ -20,5 +20,6 @@ require (
 	github.com/lib/pq v1.10.2
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/usace/goquery v0.0.0-20210825130028-45f9bdbb50fa // indirect
+	golang.org/x/tools v0.1.5 // indirect
 // indirect
 )

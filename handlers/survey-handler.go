@@ -17,6 +17,8 @@ import (
 
 var defaultUuid uuid.UUID
 
+const version = "2.0.1 Development"
+
 type SurveyHandler struct {
 	store *stores.SurveyStore
 }
@@ -28,10 +30,30 @@ func CreateSurveyHandler(ss *stores.SurveyStore) *SurveyHandler {
 	return &sh
 }
 
+//Returns the API version as a text
+//PUBLIC API
 func (sh *SurveyHandler) Version(c echo.Context) error {
-	return c.String(http.StatusOK, "NSI Survey API Version 2.01 Development")
+	return c.String(http.StatusOK, fmt.Sprintf("NSI Survey API Version %s", version))
 }
 
+//List the surveys that the requesting user (via the JWT Claim sub identifier) is a member of in a JSON array
+//
+//PUBLIC API
+func (sh *SurveyHandler) GetSurveysForUser(c echo.Context) error {
+	claims := c.Get("NSIUSER").(microauth.JwtClaim)
+	userId := claims.Sub
+	surveys, err := sh.store.GetSurveysforUser(userId)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, surveys)
+}
+
+//Creates a new survey and returns the generated identifier in a JSON document
+//
+//e.g. {"surveyId":"1111-1111-111111"}
+//
+//PRIVATE API restricted to the ADMIN role
 func (sh *SurveyHandler) CreateNewSurvey(c echo.Context) error {
 	var survey = models.Survey{}
 	if err := c.Bind(&survey); err != nil {
@@ -51,6 +73,9 @@ func (sh *SurveyHandler) CreateNewSurvey(c echo.Context) error {
 	return c.JSONBlob(http.StatusCreated, []byte(fmt.Sprintf(`{"surveyId":"%s"}`, newId)))
 }
 
+//Updates a survey and returns an empty HTTP OK result on success.
+//
+//PRIVATE API restricted to the ADMIN or SURVEY_OWNER roles
 func (sh *SurveyHandler) UpdateSurvey(c echo.Context) error {
 	var survey = models.Survey{}
 	if err := c.Bind(&survey); err != nil {
@@ -64,6 +89,9 @@ func (sh *SurveyHandler) UpdateSurvey(c echo.Context) error {
 	return c.String(http.StatusOK, "")
 }
 
+//Gets an array of survey members for a given survey. Returns a JSON array.
+//
+//PRIVATE API restricted to the ADMIN or SURVEY_OWNER roles
 func (sh *SurveyHandler) GetSurveyMembers(c echo.Context) error {
 	surveyId, err := uuid.Parse(c.Param("surveyid"))
 	if err != nil {
@@ -76,6 +104,9 @@ func (sh *SurveyHandler) GetSurveyMembers(c echo.Context) error {
 	return c.JSON(http.StatusOK, &members)
 }
 
+//Updates/Inserts a survey member record. Returns an empty HTTP CREATED (201) result on success.
+//
+//PRIVATE API restricted to the ADMIN or SURVEY_OWNER roles
 func (sh *SurveyHandler) UpsertSurveyMember(c echo.Context) error {
 	var surveyMember = models.SurveyMember{}
 	if err := c.Bind(&surveyMember); err != nil {
@@ -89,6 +120,9 @@ func (sh *SurveyHandler) UpsertSurveyMember(c echo.Context) error {
 	return c.String(http.StatusCreated, "")
 }
 
+//Removes a survey member record. Returns an empty HTTP OK result on success.
+//
+//PRIVATE API restricted to the ADMIN or SURVEY_OWNER roles
 func (sh *SurveyHandler) RemoveSurveyMember(c echo.Context) error {
 	memberId, err := uuid.Parse(c.Param("memberid"))
 	if err != nil {
@@ -99,9 +133,12 @@ func (sh *SurveyHandler) RemoveSurveyMember(c echo.Context) error {
 		log.Printf("Error removing survey member: %s", err)
 		return err
 	}
-	return c.String(http.StatusCreated, "")
+	return c.String(http.StatusOK, "")
 }
 
+//Inserts an array of survey elements.  Returns an empty HTTP CREATED (201) result on success.
+//
+//PRIVATE API restricted to the ADMIN or SURVEY_OWNER roles
 func (sh *SurveyHandler) InsertSurveyElements(c echo.Context) error {
 	var elements = []models.SurveyElement{}
 	if err := c.Bind(&elements); err != nil {
@@ -114,6 +151,10 @@ func (sh *SurveyHandler) InsertSurveyElements(c echo.Context) error {
 	return c.String(http.StatusCreated, "")
 }
 
+//method for manually making assignments to users.  Typically assignments should be made using the AssignSurveyElement method
+//but this allows for admins to override the normal assignment algorithm. Returns an empty HTTP CREATED (201) result on success.
+//
+//PRIVATE API restricted to the ADMIN role
 func (sh *SurveyHandler) AddAssignments(c echo.Context) error {
 	var assignments = []models.SurveyAssignment{}
 	if err := c.Bind(&assignments); err != nil {
@@ -127,53 +168,16 @@ func (sh *SurveyHandler) AddAssignments(c echo.Context) error {
 
 }
 
-func (sh *SurveyHandler) GetSurveyReport(c echo.Context) error {
-	surveyId, err := uuid.Parse(c.Param("surveyID"))
-	if err != nil {
-		return err
-	}
-
-	s, err := sh.store.GetReport(surveyId)
-	if err != nil {
-		return err
-	}
-	headers := "srId, userId, userName,completed,isControl,saId,fdId,x,y,invalidStructure,noStreetView,cbfips,occtype,stDamcat,foundHt,numStory,sqft,foundType,rsmeansType,quality,constType,garage,roofStyle\r\n"
-
-	resp := c.Response()
-	resp.Header().Set("Content-type", "text/csv")
-	resp.Header().Set("Content-Disposition", "attachment; filename=surveys.csv")
-	resp.Header().Set("Pragma", "no-cache")
-	resp.Header().Set("Expires", "0")
-	w := resp.Writer
-	w.Write([]byte(headers))
-	for _, record := range s {
-		vals := record.String()
-		for i, val := range vals {
-			if i > 0 {
-				w.Write([]byte(","))
-			}
-			if _, err := w.Write([]byte(val)); err != nil {
-				log.Println("error writing headers to csv:", err)
-				return err
-			}
-		}
-		w.Write([]byte("\r\n"))
-	}
-	return err
-}
-
-func (sh *SurveyHandler) GetSurveysForUser(c echo.Context) error {
-	claims := c.Get("NSIUSER").(microauth.JwtClaim)
-	userId := claims.Sub
-	surveys, err := sh.store.GetSurveysforUser(userId)
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, surveys)
-}
-
-func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
-	surveyId, err := uuid.Parse(c.Param("surveyID"))
+//Assigns a survey element to a survey member.  It works in the following manner:
+//If a user has an existing assignment that has not been saved, then that survey is returned. If the user does not have an existing assignment,
+//then surveys will be assigned in ascending order based on the survey order field.  Each survey will be
+//assigned to a single user with the exception of control surveys.  Control surveys will be assigned to all users.
+//When there are no more surveys to assign (all surveys are completed and the user has completed their control surveys),
+//then the function will return an empty survey (e.g. id values of 0).
+//
+//PRIVATE API restricted to the SURVEY_MEMBER role
+func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
+	surveyId, err := uuid.Parse(c.Param("surveyid"))
 	if err != nil {
 		return err
 	}
@@ -219,7 +223,11 @@ func (sh *SurveyHandler) GetSurvey(c echo.Context) error {
 
 }
 
-func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
+//Saves the survey assignment and returns an HTTP OK on success
+//
+//PRIVATE API restricted to the SURVEY_MEMBER role
+
+func (sh *SurveyHandler) SaveSurveyAssignment(c echo.Context) error {
 	s := models.SurveyStructure{}
 	if err := c.Bind(&s); err != nil {
 		return err
@@ -231,6 +239,15 @@ func (sh *SurveyHandler) SaveSurvey(c echo.Context) error {
 	return c.String(http.StatusOK, `{"result":"success"}`)
 }
 
+//Search the user list.  This method takes three query parameters:
+//
+//q: the query term that will match against the user name
+//
+//r: the number of rows to return
+//
+//p: the page number to return
+//
+//PUBLIC API
 func (sh *SurveyHandler) SearchUsers(c echo.Context) error {
 
 	q := c.QueryParam("q")
@@ -249,4 +266,42 @@ func (sh *SurveyHandler) SearchUsers(c echo.Context) error {
 		return err
 	}
 	return c.JSONBlob(http.StatusOK, users)
+}
+
+//Returns a CSV dump of the survey results for a given survey
+//
+//PRIVATE API restructed to the ADMIN or SURVEY_OWNER role
+func (sh *SurveyHandler) GetSurveyReport(c echo.Context) error {
+	surveyId, err := uuid.Parse(c.Param("surveyid"))
+	if err != nil {
+		return err
+	}
+
+	s, err := sh.store.GetReport(surveyId)
+	if err != nil {
+		return err
+	}
+	headers := "srId, userId, userName,completed,isControl,saId,fdId,x,y,invalidStructure,noStreetView,cbfips,occtype,stDamcat,foundHt,numStory,sqft,foundType,rsmeansType,quality,constType,garage,roofStyle\r\n"
+
+	resp := c.Response()
+	resp.Header().Set("Content-type", "text/csv")
+	resp.Header().Set("Content-Disposition", "attachment; filename=surveys.csv")
+	resp.Header().Set("Pragma", "no-cache")
+	resp.Header().Set("Expires", "0")
+	w := resp.Writer
+	w.Write([]byte(headers))
+	for _, record := range s {
+		vals := record.String()
+		for i, val := range vals {
+			if i > 0 {
+				w.Write([]byte(","))
+			}
+			if _, err := w.Write([]byte(val)); err != nil {
+				log.Println("error writing headers to csv:", err)
+				return err
+			}
+		}
+		w.Write([]byte("\r\n"))
+	}
+	return err
 }

@@ -14,8 +14,6 @@ import (
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
 )
 
-// Config holds all runtime configuration provided via environment variables
-
 const urlPrefix = "nsisapi"
 
 func main() {
@@ -42,18 +40,19 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	// Public Routes
 	e.GET(urlPrefix+"/version", surveyHandler.Version)
-	e.GET(urlPrefix+"/survey", surveyHandler.GetSurvey)
+	e.GET(urlPrefix+"/surveys", surveyHandler.GetSurveysForUser)
 	e.POST(urlPrefix+"/survey", surveyHandler.CreateNewSurvey)
-	//e.POST(urlPrefix+"/survey/:surveyId", surveyHandler.)
-	//e.GET(urlPrefix+"/reports/surveys/:eventID", surveyHandler.GetSurveyReport)
-	//e.GET(urlPrefix+"/survey/create", surveyHandler.CreateNewSurvey)
-
-	//new endpoints
-	// - create new survey
-	// - add list of survey elements
-	// - assign users to survey
+	e.PUT(urlPrefix+"/survey", surveyHandler.UpdateSurvey)
+	e.GET(urlPrefix+"/survey/:surveyid/members", surveyHandler.GetSurveyMembers)
+	e.POST(urlPrefix+"/survey/member", surveyHandler.UpsertSurveyMember)
+	e.DELETE(urlPrefix+"/survey/member/:memberid", surveyHandler.RemoveSurveyMember)
+	e.POST(urlPrefix+"/survey/elements", surveyHandler.InsertSurveyElements)
+	e.POST(urlPrefix+"/survey/assignments", surveyHandler.AddAssignments)
+	e.GET(urlPrefix+"/survey/:surveyid/assignment", surveyHandler.AssignSurveyElement)
+	e.POST(urlPrefix+"/survey/assignment", surveyHandler.SaveSurveyAssignment)
+	e.GET(urlPrefix+"/users/search", surveyHandler.SearchUsers)
+	e.GET(urlPrefix+"/survey/:surveyid/report", surveyHandler.GetSurveyReport)
 
 	e.Logger.Fatal(e.Start(":" + cfg.Port))
 

@@ -123,7 +123,7 @@ func fetchSurveyAssignment(userId string, t *testing.T) {
 	c.SetParamNames("surveyID")
 	c.SetParamValues(newSurveyId)
 	h := buildHandler(t)
-	if assert.NoError(t, h.GetSurvey(c)) {
+	if assert.NoError(t, h.AssignSurveyElement(c)) {
 		fmt.Printf("Fetching next survey for %s\n", userId)
 		fmt.Println(rec.Body.String())
 		assert.Equal(t, http.StatusOK, rec.Code)
@@ -146,7 +146,7 @@ func saveSurveyAssignment(userId string, t *testing.T) {
 			payload := string(json)
 			rec, c := buildContext(http.MethodPost, payload, userId)
 			h := buildHandler(t)
-			if assert.NoError(t, h.SaveSurvey(c)) {
+			if assert.NoError(t, h.SaveSurveyAssignment(c)) {
 				assert.Equal(t, http.StatusOK, rec.Code)
 			}
 		}
