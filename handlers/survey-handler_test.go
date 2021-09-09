@@ -38,6 +38,11 @@ func TestCreateSurvey(t *testing.T) {
 func TestUpdateSurvey(t *testing.T) {
 	updateJSON := fmt.Sprintf(`{"id":"%s","title":"Survey Test Updated","description":"This is a description of survey edited","active":false}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, updateJSON, "987654")
+	c.SetParamNames("surveyid")
+	c.SetParamValues(newSurveyId)
+	sid, _ := uuid.Parse(newSurveyId)
+	c.Set("NSISURVEY", sid)
+
 	h := buildHandler(t)
 	if assert.NoError(t, h.UpdateSurvey(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
@@ -47,8 +52,10 @@ func TestUpdateSurvey(t *testing.T) {
 func TestInsertSurveyMember(t *testing.T) {
 	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"987654","isOwner":false}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload, "987654")
-	c.SetParamNames("surveyID")
+	c.SetParamNames("surveyid")
 	c.SetParamValues(newSurveyId)
+	sid, _ := uuid.Parse(newSurveyId)
+	c.Set("NSISURVEY", sid)
 	h := buildHandler(t)
 	if assert.NoError(t, h.UpsertSurveyMember(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
@@ -58,8 +65,10 @@ func TestInsertSurveyMember(t *testing.T) {
 func TestUpdateSurveyMember(t *testing.T) {
 	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"987654","isOwner":true}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload, "987654")
-	c.SetParamNames("surveyID")
+	c.SetParamNames("surveyid")
 	c.SetParamValues(newSurveyId)
+	sid, _ := uuid.Parse(newSurveyId)
+	c.Set("NSISURVEY", sid)
 	h := buildHandler(t)
 	if assert.NoError(t, h.UpsertSurveyMember(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
@@ -69,8 +78,10 @@ func TestUpdateSurveyMember(t *testing.T) {
 func TestInsertSecondSurveyMember(t *testing.T) {
 	payload := fmt.Sprintf(`{"surveyId":"%s","userId":"987655","isOwner":true}`, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload, "987654")
-	c.SetParamNames("surveyID")
+	c.SetParamNames("surveyid")
 	c.SetParamValues(newSurveyId)
+	sid, _ := uuid.Parse(newSurveyId)
+	c.Set("NSISURVEY", sid)
 	h := buildHandler(t)
 	if assert.NoError(t, h.UpsertSurveyMember(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
@@ -91,8 +102,10 @@ func TestInsertSurveyElements(t *testing.T) {
 		{"surveyId":"%s","surveyOrder":9,"fdId":95001, "isControl":false}
 	]`, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId, newSurveyId)
 	rec, c := buildContext(http.MethodPost, payload, "987654")
-	c.SetParamNames("surveyID")
+	c.SetParamNames("surveyid")
 	c.SetParamValues(newSurveyId)
+	sid, _ := uuid.Parse(newSurveyId)
+	c.Set("NSISURVEY", sid)
 	h := buildHandler(t)
 	if assert.NoError(t, h.InsertSurveyElements(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
@@ -108,8 +121,10 @@ func TestInsertSurveyAssignments(t *testing.T) {
 			{"seId":"%s","completed":false, "assignedTo":"987655"}
 		]`, se.ID, se.ID)
 		rec, c := buildContext(http.MethodPost, payload, "987654")
-		c.SetParamNames("surveyID")
+		c.SetParamNames("surveyid")
 		c.SetParamValues(newSurveyId)
+		sid, _ := uuid.Parse(newSurveyId)
+		c.Set("NSISURVEY", sid)
 		h := buildHandler(t)
 		if assert.NoError(t, h.AddAssignments(c)) {
 			assert.Equal(t, http.StatusCreated, rec.Code)
@@ -130,7 +145,7 @@ func TestGetSurveyAssignment(t *testing.T) {
 ///////////////////interior tests//////////////////
 func fetchSurveyAssignment(userId string, t *testing.T) {
 	rec, c := buildContext(http.MethodGet, "", userId)
-	c.SetParamNames("surveyID")
+	c.SetParamNames("surveyid")
 	c.SetParamValues(newSurveyId)
 	h := buildHandler(t)
 	if assert.NoError(t, h.AssignSurveyElement(c)) {
