@@ -81,6 +81,9 @@ func (sh *SurveyHandler) UpdateSurvey(c echo.Context) error {
 	if err := c.Bind(&survey); err != nil {
 		return err
 	}
+	if !validateUrl(survey.ID, c) {
+		return errors.New("Invalid Request")
+	}
 	err := sh.store.UpdateSurvey(survey)
 	if err != nil {
 		log.Printf("Error updating survey: %s", err)
@@ -97,6 +100,7 @@ func (sh *SurveyHandler) GetSurveyMembers(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
 	members, err := sh.store.GetSurveyMembers(surveyId)
 	if err != nil {
 		return err
@@ -111,6 +115,9 @@ func (sh *SurveyHandler) UpsertSurveyMember(c echo.Context) error {
 	var surveyMember = models.SurveyMember{}
 	if err := c.Bind(&surveyMember); err != nil {
 		return err
+	}
+	if !validateUrl(surveyMember.SurveyID, c) {
+		return errors.New("Invalid Request")
 	}
 	err := sh.store.UpsertSurveyMember(surveyMember)
 	if err != nil {
@@ -144,6 +151,11 @@ func (sh *SurveyHandler) InsertSurveyElements(c echo.Context) error {
 	if err := c.Bind(&elements); err != nil {
 		return err
 	}
+	servId, ok := validateElements(&elements)
+	if !ok || !validateUrl(servId, c) {
+		return errors.New("Invalid Request")
+	}
+
 	err := sh.store.InsertSurveyElements(&elements)
 	if err != nil {
 		return err
@@ -154,7 +166,7 @@ func (sh *SurveyHandler) InsertSurveyElements(c echo.Context) error {
 //method for manually making assignments to users.  Typically assignments should be made using the AssignSurveyElement method
 //but this allows for admins to override the normal assignment algorithm. Returns an empty HTTP CREATED (201) result on success.
 //
-//PRIVATE API restricted to the ADMIN role
+//PRIVATE API restricted to the ADMIN or SURVEY_OWNER roles
 func (sh *SurveyHandler) AddAssignments(c echo.Context) error {
 	var assignments = []models.SurveyAssignment{}
 	if err := c.Bind(&assignments); err != nil {
@@ -304,4 +316,34 @@ func (sh *SurveyHandler) GetSurveyReport(c echo.Context) error {
 		w.Write([]byte("\r\n"))
 	}
 	return err
+}
+
+func validateElements(elements *[]models.SurveyElement) (uuid.UUID, bool) {
+	var surveyId uuid.UUID
+	for i, v := range *elements {
+		if i == 0 {
+			surveyId = v.SurveyID
+		} else {
+			if surveyId != v.SurveyID {
+				return surveyId, false
+			}
+		}
+	}
+	return surveyId, true
+}
+
+func validateUrl(surveyId uuid.UUID, c echo.Context) bool {
+	s := c.Get("NSISURVEY")
+	if s == nil {
+		return false
+	}
+	surveyUrlId, ok := s.(uuid.UUID)
+	if !ok {
+		return false
+	}
+	if surveyId == surveyUrlId {
+		return true
+	}
+	log.Printf("Invalid Request.  URL SurveyId (%s) does not match Payload Survey Id(%s)", surveyUrlId, surveyId)
+	return false
 }

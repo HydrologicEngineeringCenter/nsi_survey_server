@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	"github.com/HydrologicEngineeringCenter/nsi_survey_server/auth"
+	. "github.com/HydrologicEngineeringCenter/nsi_survey_server/auth"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/config"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/handlers"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
@@ -29,30 +29,32 @@ func main() {
 	}
 
 	surveyHandler := handlers.CreateSurveyHandler(ss)
-	jwtAuth := microauth.Auth{
-		AuthMiddleware: auth.Appauth,
+	auth := microauth.Auth{
+		AuthRoute: Appauth,
+		Aud:       cfg.Aud,
+		Store:     ss,
 	}
-	jwtAuth.LoadVerificationKey(cfg.Ippk)
+	auth.LoadVerificationKey(cfg.Ippk)
 
 	e := echo.New()
 
-	e.Use(jwtAuth.AuthorizeMiddleware)
+	//e.Use(jwtAuth.AuthorizeMiddleware)
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	e.GET(urlPrefix+"/version", surveyHandler.Version)
-	e.GET(urlPrefix+"/surveys", surveyHandler.GetSurveysForUser)
-	e.POST(urlPrefix+"/survey", surveyHandler.CreateNewSurvey)
-	e.PUT(urlPrefix+"/survey", surveyHandler.UpdateSurvey)
-	e.GET(urlPrefix+"/survey/:surveyid/members", surveyHandler.GetSurveyMembers)
-	e.POST(urlPrefix+"/survey/member", surveyHandler.UpsertSurveyMember)
-	e.DELETE(urlPrefix+"/survey/member/:memberid", surveyHandler.RemoveSurveyMember)
-	e.POST(urlPrefix+"/survey/elements", surveyHandler.InsertSurveyElements)
-	e.POST(urlPrefix+"/survey/assignments", surveyHandler.AddAssignments)
-	e.GET(urlPrefix+"/survey/:surveyid/assignment", surveyHandler.AssignSurveyElement)
-	e.POST(urlPrefix+"/survey/assignment", surveyHandler.SaveSurveyAssignment)
-	e.GET(urlPrefix+"/users/search", surveyHandler.SearchUsers)
-	e.GET(urlPrefix+"/survey/:surveyid/report", surveyHandler.GetSurveyReport)
+	e.GET(urlPrefix+"/surveys", auth.AuthorizeRoute(surveyHandler.GetSurveysForUser, PUBLIC))
+	e.POST(urlPrefix+"/survey", auth.AuthorizeRoute(surveyHandler.CreateNewSurvey, ADMIN))
+	e.PUT(urlPrefix+"/survey/:surveyid", auth.AuthorizeRoute(surveyHandler.UpdateSurvey, ADMIN, SURVEY_OWNER))
+	e.GET(urlPrefix+"/survey/:surveyid/members", auth.AuthorizeRoute(surveyHandler.GetSurveyMembers, ADMIN, SURVEY_OWNER))
+	e.POST(urlPrefix+"/survey/:surveyid/member", auth.AuthorizeRoute(surveyHandler.UpsertSurveyMember, ADMIN, SURVEY_OWNER))
+	e.DELETE(urlPrefix+"/survey/member/:memberid", auth.AuthorizeRoute(surveyHandler.RemoveSurveyMember, ADMIN, SURVEY_OWNER))
+	e.POST(urlPrefix+"/survey/:surveyid/elements", auth.AuthorizeRoute(surveyHandler.InsertSurveyElements, ADMIN, SURVEY_OWNER))
+	e.POST(urlPrefix+"/survey/:surveyid/assignments", auth.AuthorizeRoute(surveyHandler.AddAssignments, ADMIN))
+	e.GET(urlPrefix+"/survey/:surveyid/assignment", auth.AuthorizeRoute(surveyHandler.AssignSurveyElement, SURVEY_MEMBER))
+	e.POST(urlPrefix+"/survey/assignment", auth.AuthorizeRoute(surveyHandler.SaveSurveyAssignment, SURVEY_MEMBER))
+	e.GET(urlPrefix+"/users/search", auth.AuthorizeRoute(surveyHandler.SearchUsers, PUBLIC))
+	e.GET(urlPrefix+"/survey/:surveyid/report", auth.AuthorizeRoute(surveyHandler.GetSurveyReport, ADMIN, SURVEY_OWNER))
 
 	e.Logger.Fatal(e.Start(":" + cfg.Port))
 

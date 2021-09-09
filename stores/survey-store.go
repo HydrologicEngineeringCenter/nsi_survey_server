@@ -213,3 +213,29 @@ func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
 	})
 	return err
 }
+
+func (ss *SurveyStore) IsOwner(surveyId uuid.UUID, userId string) bool {
+	var owner int
+	err := ss.DS.Select("select count(*) as owner from survey_members where survey_id=$1 and user_id=$2 and is_owner=true").
+		Params(surveyId, userId).
+		Dest(&owner).
+		Fetch()
+	if err != nil {
+		log.Printf("Error in isOwner query:%s\n ", err)
+		return false
+	}
+	return owner > 0
+}
+
+func (ss *SurveyStore) IsMember(surveyId uuid.UUID, userId string) bool {
+	var member int
+	err := ss.DS.Select("select count(*) as owner from survey_members where survey_id=$1 and user_id=$2").
+		Params(surveyId, userId).
+		Dest(&member).
+		Fetch()
+	if err != nil {
+		log.Printf("Error in isMember query:%s\n ", err)
+		return false
+	}
+	return member > 0
+}

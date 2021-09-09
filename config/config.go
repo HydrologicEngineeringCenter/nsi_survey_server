@@ -15,6 +15,7 @@ type Config struct {
 	Dbport        string
 	Ippk          string
 	Port          string
+	Aud           string
 }
 
 func (c *Config) Rdbmsconfig() dq.RdbmsConfig {

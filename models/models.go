@@ -42,18 +42,18 @@ type AssignmentInfo struct {
 }
 
 type SurveyElement struct {
-	ID          string `json:"seId" db:"id" dbid:"AUTOINCREMENT"`
-	SurveyID    string `json:"surveyId" db:"survey_id"`
-	SurveyOrder int    `json:"surveyOrder" db:"survey_order"`
-	FD_ID       int    `json:"fdId" db:"fd_id"`
-	Is_control  bool   `json:"isControl" db:"is_control"`
+	ID          uuid.UUID `json:"seId" db:"id" dbid:"AUTOINCREMENT"`
+	SurveyID    uuid.UUID `json:"surveyId" db:"survey_id"`
+	SurveyOrder int       `json:"surveyOrder" db:"survey_order"`
+	FD_ID       int       `json:"fdId" db:"fd_id"`
+	Is_control  bool      `json:"isControl" db:"is_control"`
 }
 
 type SurveyAssignment struct {
-	ID               string `json:"saId" db:"id" dbid:"AUTOINCREMENT"`
-	SurveyElement_ID string `json:"seId" db:"se_id"`
-	Completed        bool   `json:"completed" db:"completed"`
-	Assigned         string `json:"assignedTo" db:"assigned_to"`
+	ID               uuid.UUID `json:"saId" db:"id" dbid:"AUTOINCREMENT"`
+	SurveyElement_ID uuid.UUID `json:"seId" db:"se_id"`
+	Completed        bool      `json:"completed" db:"completed"`
+	Assigned         string    `json:"assignedTo" db:"assigned_to"`
 }
 
 type SurveyStructure struct {
