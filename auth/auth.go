@@ -3,6 +3,7 @@ package auth
 import (
 	"log"
 
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
 	. "github.com/USACE/microauth"
 	"github.com/google/uuid"
@@ -19,6 +20,10 @@ const (
 func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim) bool {
 	c.Set("NSIUSER", claims)
 	store := authstore.(*stores.SurveyStore)
+	store.AddUser(models.User{
+		UserID:   claims.Sub,
+		Username: claims.UserName,
+	})
 
 	if Contains(roles, PUBLIC) {
 		return true

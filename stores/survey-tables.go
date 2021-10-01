@@ -28,7 +28,7 @@ var surveyTable = dq.TableDataSet{
 
 var usersTable = dq.TableDataSet{
 	Statements: map[string]string{
-		"insert": `insert into users values ($1,$2)`,
+		"insert": `insert into users values ($1,$2) ON CONFLICT DO NOTHING`,
 	},
 }
 
