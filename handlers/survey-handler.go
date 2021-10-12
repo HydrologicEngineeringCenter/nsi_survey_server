@@ -332,6 +332,8 @@ func validateElements(elements *[]models.SurveyElement) (uuid.UUID, bool) {
 	return surveyId, true
 }
 
+// Checks surveyId in body matches with surveyId passed by URI
+// Do not use with handlers where surveyId isn't an expected URI param
 func validateUrl(surveyId uuid.UUID, c echo.Context) bool {
 	s := c.Get("NSISURVEY")
 	if s == nil {

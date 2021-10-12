@@ -20,6 +20,24 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 	c.Set("NSIUSER", claims)
 	store := authstore.(*stores.SurveyStore)
 
+	surveyId, err := uuid.Parse(c.Param("surveyid"))
+
+	if err != nil { // even with no surveyid, there are handlers that can be invoked
+		log.Printf("Invalid survey_id: %s\n", err)
+		// return false
+
+	} else { // surveyId exists in URI
+
+		c.Set("NSISURVEY", surveyId)
+
+		if Contains(roles, SURVEY_OWNER) {
+			return store.IsOwner(surveyId, claims.Sub)
+		}
+		if Contains(roles, SURVEY_MEMBER) {
+			return store.IsMember(surveyId, claims.Sub)
+		}
+	}
+
 	if Contains(roles, PUBLIC) {
 		return true
 	}
@@ -27,20 +45,14 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 		return true
 	}
 
-	surveyId, err := uuid.Parse(c.Param("surveyid"))
-	if err != nil {
-		log.Printf("Invalid survey_id: %s\n", err)
-		return false
-	}
-	c.Set("NSISURVEY", surveyId)
-
-	if Contains(roles, SURVEY_OWNER) {
-		return store.IsOwner(surveyId, claims.Sub)
-	}
-
-	if Contains(roles, SURVEY_MEMBER) {
-		return store.IsMember(surveyId, claims.Sub)
-	}
-
 	return false
 }
+
+// func containsParam(paramNames []string, param string) bool {
+// 	for _, pn := range paramNames {
+// 		if pn == param {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
