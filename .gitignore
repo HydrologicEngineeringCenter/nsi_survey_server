@@ -17,3 +17,5 @@ nsi_survey_server
 .env.sh
 .vscode
 .devcontainer/pk.pem
+*.server
+

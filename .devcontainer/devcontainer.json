@@ -1,44 +1,22 @@
-// For format details, see https://aka.ms/vscode-remote/devcontainer.json or this file's README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.112.0/containers/docker-existing-dockerfile
 {
-	"name": "NSISAPI_DEV",
+    "name": "NSISAPI_DEV",
 
-	// Sets the run context to one level up instead of the .devcontainer folder.
-	"context": "..",
+    "context": "..",
 
-	// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
-  "dockerFile": "..\\Dockerfile.dev",
-  // "workspaceFolder": "/app/server",
+    "dockerFile": "./Dockerfile.dev",
 
-  "runArgs": ["--env-file", ".devcontainer/devcontainer.env"],
+    "runArgs": ["--env-file", ".devcontainer/devcontainer.env"],
 
+    "postCreateCommand": "cd /workspaces && git clone https://github.com/USACE/microauth && apt update && apt install vim -y",
 
-  "postCreateCommand": "cd /workspaces && git clone https://github.com/USACE/microauth && apt update && apt install vim -y",
+    "settings": {
+    },
 
-	// Set *default* container specific settings.json values on container create.
-	// "settings": { 
-	// 	"terminal.integrated.shell.linux": null
-	// },
+    "extensions": [
+    ],
 
-	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [
-		"golang.go",
-		"ms-azuretools.vscode-docker",
-		"ckolkman.vscode-postgres"
-	],
+    "forwardPorts": [3031],
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [3031],
+    "workspaceMount": "~/dev/nsi_survey_server"
 
-	// Uncomment the next line to run commands after the container is created - for example installing git.
-	// "postCreateCommand": "apt-get update && apt-get install -y git",
-
-	// Uncomment when using a ptrace-based debugger like C++, Go, and Rust
-	// "runArgs": [ "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined" ],
-
-	// Uncomment to use the Docker CLI from inside the container. See https://aka.ms/vscode-remote/samples/docker-in-docker.
-	// "mounts": [ "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind" ],
-
-	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
-	// "remoteUser": "vscode"
 }
