@@ -15,4 +15,4 @@ services:
       - .devcontainer/devcontainer.env
     tty: true
 
-# still need to add in pk.pem from the auth server to /workspaces after setup
+# still need to add in pk.pem from the auth server to .devcontainer/ after setup
