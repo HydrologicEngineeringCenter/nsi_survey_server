@@ -13,6 +13,5 @@ services:
       - $PWD/../microauth:/workspaces/microauth
     env_file:
       - .devcontainer/devcontainer.env
+    working_dir: /workspaces/nsi_survey_server
     tty: true
-
-# still need to add in pk.pem from the auth server to .devcontainer/ after setup
