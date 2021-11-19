@@ -271,7 +271,7 @@ func (sh *SurveyHandler) SearchUsers(c echo.Context) error {
 	if q == "" || errRow != nil || errPage != nil {
 		return errors.New("Invalid Query Parameters")
 	}
-	users, err := sh.store.DS.Select("select * from users where username like $1 limit $2 offset $3").
+	users, err := sh.store.DS.Select("select * from users where user_name ilike $1 limit $2 offset $3").
 		Params("%"+q+"%", rows, rows*page).
 		FetchJSON()
 	if err != nil {
