@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"log"
-
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
 	. "github.com/USACE/microauth"
@@ -28,7 +26,7 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 	surveyId, err := uuid.Parse(c.Param("surveyid"))
 
 	if err != nil { // even with no surveyid, there are handlers that can be invoked
-		log.Printf("Invalid survey_id: %s\n", err)
+		// log.Printf("Invalid survey_id: %s\n", err)
 		// return false
 
 	} else { // surveyId exists in URI
