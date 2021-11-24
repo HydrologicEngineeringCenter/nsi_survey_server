@@ -6,6 +6,8 @@ import (
 )
 
 var surveyTable = dq.TableDataSet{
+	Name:   "",
+	Schema: "",
 	Statements: map[string]string{
 		"selectById": `select * from survey where id=$1`,
 		"insert":     `insert into survey (title,description,active) values ($1,$2,$3) returning id`,
@@ -22,6 +24,10 @@ var surveyTable = dq.TableDataSet{
 							left outer join survey_member sm on sm.survey_id=s.id
 							where so.user_id=$1 or sm.user_id=$1`,
 		"insert-owner": `insert into survey_member (survey_id,user_id,is_owner) values ($1,$2,$3)`,
+		"members": `select distinct m.id, m.user_id, u.user_name, m.is_owner
+                    from survey_member m
+                    left outer join users u on m.user_id=u.user_id
+                    where m.survey_id=$1`,
 	},
 	Fields: models.Survey{},
 }
@@ -35,7 +41,7 @@ var usersTable = dq.TableDataSet{
 var surveyMemberTable = dq.TableDataSet{
 	Statements: map[string]string{
 		"upsert": `insert into survey_member(survey_id,user_id,is_owner) values ($1,$2,$3)
-		                   ON CONFLICT(survey_id,user_id) do 
+		                   ON CONFLICT(survey_id,user_id) do
 						  update set is_owner=EXCLUDED.is_owner`,
 		"select_owners": "select * from survey_member where survey_id=$1",
 		"remove":        `delete from survey_member where id=$1`,
@@ -59,28 +65,28 @@ var surveyAssignmentTable = dq.TableDataSet{
 								from survey_element t2
 								left outer join survey_assignment t1 on t1.se_id=t2.id
 								where assigned_to=$1 and t2.survey_id=$2 and completed='false'
-							
-								union 
-							
-								select sa_id,se_id,completed,next_assignment.survey_order,next_survey_order, se1.id as next_survey_seid, next_control_order, se2.id as next_control_seid from 
-									(select null::uuid as sa_id, null::uuid as se_id, null::bool as completed,null::integer as survey_order, 
-							
+
+								union
+
+								select sa_id,se_id,completed,next_assignment.survey_order,next_survey_order, se1.id as next_survey_seid, next_control_order, se2.id as next_control_seid from
+									(select null::uuid as sa_id, null::uuid as se_id, null::bool as completed,null::integer as survey_order,
+
 									(select case when (
-											select max(t2.survey_order) 
-											from survey_assignment t1 
-											inner join survey_element t2 on t2.id=t1.se_id 
-											where t2.survey_id=$2 and t2.is_control='false') is null 
+											select max(t2.survey_order)
+											from survey_assignment t1
+											inner join survey_element t2 on t2.id=t1.se_id
+											where t2.survey_id=$2 and t2.is_control='false') is null
 										then
 											(select min(survey_order) from survey_element where survey_id=$2 and is_control='false')
 										else
 										(select min(survey_order) from survey_element where survey_order>
 											(select max(t2.survey_order)
-											from survey_assignment t1 
-											inner join survey_element t2 on t2.id=t1.se_id 
-											where t2.survey_id=$2 and t2.is_control='false') 
+											from survey_assignment t1
+											inner join survey_element t2 on t2.id=t1.se_id
+											where t2.survey_id=$2 and t2.is_control='false')
 											and is_control='false')
 										end) as next_survey_order,
-									
+
 									(select min(t1.survey_order) from survey_element t1
 											left outer join (select * from survey_assignment where assigned_to=$1) t2 on t1.id=t2.se_id
 											where assigned_to is null and is_control='true' and survey_id=$2) as next_control_order
@@ -89,7 +95,7 @@ var surveyAssignmentTable = dq.TableDataSet{
 								left outer join survey_element se2 on se2.survey_order=next_assignment.next_control_order
 								where se1.survey_id=$2 and (se2.survey_id=$2  or se2.survey_id is null)
 							) assignment_query
-	
+
 							order by survey_order limit 1`,
 	},
 	Fields: models.SurveyAssignment{},

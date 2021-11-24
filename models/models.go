@@ -23,10 +23,19 @@ type User struct {
 	UserID   string `db:"user_id" json:"userId"`
 	Username string `db:"user_name" json:"userName"`
 }
+
 type SurveyMember struct {
 	ID       uuid.UUID `db:"id" json:"id"`
 	SurveyID uuid.UUID `db:"survey_id" json:"surveyId"`
 	UserID   string    `db:"user_id" json:"userId"`
+	IsOwner  bool      `db:"is_owner" json:"isOwner"`
+}
+
+// used in GetSurveyMembers handler
+type SurveyMemberAlt struct {
+	ID       uuid.UUID `db:"id" json:"id"`
+	UserID   string    `db:"user_id" json:"userId"`
+	UserName string    `db:"user_name" json:"userName"`
 	IsOwner  bool      `db:"is_owner" json:"isOwner"`
 }
 
