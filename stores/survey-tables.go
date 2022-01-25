@@ -142,8 +142,8 @@ var resultTable = dq.TableDataSet{
 				t1.no_street_view
 				from survey_result t1
 				inner join survey_assignment t2 on t2.id=t1.sa_id
-				inner join surveyor t3 on t3.user_id=t2.assigned_to
+				inner join users t3 on t3.user_id=t2.assigned_to
 				inner join survey_element t4 on t4.id=t2.se_id
-				where t4.survey_event_id=$1`,
+				where t4.survey_id=$1`,
 	},
 }

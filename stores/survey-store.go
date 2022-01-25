@@ -140,7 +140,7 @@ func (ss *SurveyStore) GetReport(surveyId uuid.UUID) ([]models.SurveyResult, err
 	s := []models.SurveyResult{}
 	err := ss.DS.Select(resultTable.Statements["surveyReport"]).
 		Params(surveyId).
-		Dest(s).
+		Dest(&s).
 		Fetch()
 	return s, err
 }
