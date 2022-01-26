@@ -105,6 +105,11 @@ func (ss *SurveyStore) RemoveSurveyMember(memberId uuid.UUID) error {
 	return err
 }
 
+func (ss *SurveyStore) RemoveMemberFromSurvey(memberId string, surveyId uuid.UUID) error {
+	err := ss.DS.Exec(goquery.NoTx, surveyMemberTable.Statements["removeFromSurvey"], memberId, surveyId)
+	return err
+}
+
 func (ss SurveyStore) InsertSurveyElements(elements *[]models.SurveyElement) error {
 	err := ss.DS.Insert(&surveyElementTable).
 		Records(elements).

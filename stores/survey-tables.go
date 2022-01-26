@@ -42,8 +42,9 @@ var surveyMemberTable = dq.TableDataSet{
 		"upsert": `insert into survey_member(survey_id,user_id,is_owner) values ($1,$2,$3)
 		                   ON CONFLICT(survey_id,user_id) do
 						  update set is_owner=EXCLUDED.is_owner`,
-		"select_owners": "select * from survey_member where survey_id=$1",
-		"remove":        `delete from survey_member where id=$1`,
+		"select_owners":    "select * from survey_member where survey_id=$1",
+		"remove":           `delete from survey_member where user_id=$1`,
+		"removeFromSurvey": `delete from survey_member where user_id=$1 and survey_id=$2`,
 	},
 	Fields: models.SurveyMember{},
 }

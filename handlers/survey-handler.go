@@ -143,6 +143,23 @@ func (sh *SurveyHandler) RemoveSurveyMember(c echo.Context) error {
 	return c.String(http.StatusOK, "")
 }
 
+//Removes a survey member record from a specific survey. Returns an empty HTTP OK result on success.
+//
+//PRIVATE API restricted to the ADMIN or SURVEY_OWNER roles
+func (sh *SurveyHandler) RemoveMemberFromSurvey(c echo.Context) error {
+	memberId := c.Param("memberid")
+	surveyId, err := uuid.Parse(c.Param("surveyid"))
+	if err != nil {
+		return err
+	}
+	err = sh.store.RemoveMemberFromSurvey(memberId, surveyId)
+	if err != nil {
+		log.Printf("Error removing survey member: %s", err)
+		return err
+	}
+	return c.String(http.StatusOK, "")
+}
+
 //Inserts an array of survey elements.  Returns an empty HTTP CREATED (201) result on success.
 //
 //PRIVATE API restricted to the ADMIN or SURVEY_OWNER roles
