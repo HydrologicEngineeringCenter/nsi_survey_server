@@ -44,7 +44,7 @@ func main() {
 
 	e.GET(urlPrefix+"/version", surveyHandler.Version)
 	e.GET(urlPrefix+"/surveys", auth.AuthorizeRoute(surveyHandler.GetSurveysForUser, PUBLIC))
-	e.POST(urlPrefix+"/survey", auth.AuthorizeRoute(surveyHandler.CreateNewSurvey, ADMIN))
+	e.POST(urlPrefix+"/survey", auth.AuthorizeRoute(surveyHandler.CreateNewSurvey, ADMIN, PUBLIC))
 	e.PUT(urlPrefix+"/survey/:surveyid", auth.AuthorizeRoute(surveyHandler.UpdateSurvey, ADMIN, SURVEY_OWNER))
 	e.GET(urlPrefix+"/survey/:surveyid/members", auth.AuthorizeRoute(surveyHandler.GetSurveyMembers, ADMIN, SURVEY_OWNER))
 	e.POST(urlPrefix+"/survey/:surveyid/member", auth.AuthorizeRoute(surveyHandler.UpsertSurveyMember, ADMIN, SURVEY_OWNER))

@@ -44,6 +44,7 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 	if Contains(roles, PUBLIC) {
 		return true
 	}
+
 	if Contains(roles, ADMIN) && Contains_string(claims.Roles, "ADMIN") {
 		return true
 	}
