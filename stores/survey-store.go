@@ -45,6 +45,17 @@ func (ss *SurveyStore) GetSurveysforUser(userId string) (*[]models.Survey, error
 	return &surveys, err
 }
 
+func (ss *SurveyStore) GetSurveysforAdmin() (*[]models.Survey, error) {
+	surveys := []models.Survey{}
+	err := ss.DS.Select().
+		DataSet(&surveyTable).
+		StatementKey("admin-surveys").
+		Params().
+		Dest(&surveys).
+		Fetch()
+	return &surveys, err
+}
+
 func (ss *SurveyStore) GetSurveyMembers(surveyId uuid.UUID) (*[]models.SurveyMemberAlt, error) {
 	members := []models.SurveyMemberAlt{}
 	err := ss.DS.Select().

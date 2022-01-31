@@ -22,6 +22,9 @@ var surveyTable = dq.TableDataSet{
 							from survey s
 							left outer join survey_member sm on sm.survey_id=s.id
 							where sm.user_id=$1`,
+		"admin-surveys": `select distinct s.id,s.title,s.description,s.active
+							from survey s
+							left outer join survey_member sm on sm.survey_id=s.id`,
 		"insert-owner": `insert into survey_member (survey_id,user_id,is_owner) values ($1,$2,$3)`,
 		"members": `select distinct m.id, m.user_id, u.user_name, m.is_owner
                     from survey_member m

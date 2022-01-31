@@ -42,7 +42,14 @@ func (sh *SurveyHandler) Version(c echo.Context) error {
 func (sh *SurveyHandler) GetSurveysForUser(c echo.Context) error {
 	claims := c.Get("NSIUSER").(microauth.JwtClaim)
 	userId := claims.Sub
-	surveys, err := sh.store.GetSurveysforUser(userId)
+	roles := claims.Roles
+	var surveys *[]models.Survey
+	var err error
+	if microauth.Contains_string(roles, "ADMIN") {
+		surveys, err = sh.store.GetSurveysforAdmin()
+	} else {
+		surveys, err = sh.store.GetSurveysforUser(userId)
+	}
 	if err != nil {
 		return err
 	}
