@@ -304,6 +304,30 @@ func (sh *SurveyHandler) SearchUsers(c echo.Context) error {
 	return c.JSONBlob(http.StatusOK, users)
 }
 
+//Validate that the survey name is available. Returns true if name is unused
+//
+//q: the query term that will match against the survey name
+//
+//PUBLIC API
+func (sh *SurveyHandler) ValidSurveyName(c echo.Context) error {
+
+	q := c.QueryParam("q")
+
+	if q == "" {
+		return errors.New("Invalid Query Parameters")
+	}
+	var surveys []models.Survey
+	err := sh.store.DS.Select("select * from survey where title = $1").
+		Params(q).
+		Dest(&surveys).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	invalid := len(surveys) > 0
+	return c.JSONBlob(http.StatusOK, []byte(`{"result":`+strconv.FormatBool(!invalid)+`}`))
+}
+
 //Returns a CSV dump of the survey results for a given survey
 //
 //PRIVATE API restructed to the ADMIN or SURVEY_OWNER role

@@ -55,6 +55,7 @@ func main() {
 	e.GET(urlPrefix+"/survey/:surveyid/assignment", auth.AuthorizeRoute(surveyHandler.AssignSurveyElement, SURVEY_MEMBER))
 	e.POST(urlPrefix+"/survey/assignment", auth.AuthorizeRoute(surveyHandler.SaveSurveyAssignment, SURVEY_MEMBER))
 	e.GET(urlPrefix+"/users/search", auth.AuthorizeRoute(surveyHandler.SearchUsers, PUBLIC))
+	e.GET(urlPrefix+"/survey/valid", auth.AuthorizeRoute(surveyHandler.ValidSurveyName, PUBLIC))
 	e.GET(urlPrefix+"/survey/:surveyid/report", auth.AuthorizeRoute(surveyHandler.GetSurveyReport, ADMIN, SURVEY_OWNER))
 
 	e.Logger.Fatal(e.Start(":" + cfg.Port))
