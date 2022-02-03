@@ -40,8 +40,8 @@ type SurveyMemberAlt struct {
 }
 
 type AssignmentInfo struct {
-	SAID             *uuid.UUID `db:"sa_id"`
-	SEID             *uuid.UUID `db:"se_id"`
+	SAID             *uuid.UUID `db:"sa_id"` // survey_assignment id
+	SEID             *uuid.UUID `db:"se_id"` // survey_element id
 	Completed        *bool      `db:"completed"`
 	SurveyOrder      *int       `db:"survey_order"`
 	NextSurveyOrder  *int       `db:"next_survey_order"`
