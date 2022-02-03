@@ -227,7 +227,7 @@ func (sh *SurveyHandler) AddAssignments(c echo.Context) error {
 //When there are no more surveys to assign (all surveys are completed and the user has completed their control surveys),
 //then the function will return an empty survey (e.g. id values of 0).
 //
-//PRIVATE API restricted to the SURVEY_MEMBER role
+//PRIVATE API restricted to the ADMIN, SURVEY_OWNER, and SURVEY_MEMBER roles
 func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 	surveyId, err := uuid.Parse(c.Param("surveyid"))
 	if err != nil {
