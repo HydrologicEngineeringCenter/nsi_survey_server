@@ -55,7 +55,7 @@ var surveyMemberTable = dq.TableDataSet{
 var surveyElementTable = dq.TableDataSet{
 	Name: "survey_element",
 	Statements: map[string]string{
-		"select_elements": `select * from survey_element where survey_id=$1`,
+		"select_elements": `select survey_order, fd_id, is_control from survey_element where survey_id=$1`,
 	},
 	Fields: models.SurveyElement{},
 }

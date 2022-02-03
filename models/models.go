@@ -58,6 +58,13 @@ type SurveyElement struct {
 	Is_control  bool      `json:"isControl" db:"is_control"`
 }
 
+// SurveyElementAlt is a stripped down SurveyElement intended for GetSurveyElements response payload
+type SurveyElementAlt struct {
+	SurveyOrder int  `json:"surveyOrder" db:"survey_order"`
+	FD_ID       int  `json:"fdId" db:"fd_id"`
+	Is_control  bool `json:"isControl" db:"is_control"`
+}
+
 type SurveyAssignment struct {
 	ID               uuid.UUID `json:"saId" db:"id" dbid:"AUTOINCREMENT"`
 	SurveyElement_ID uuid.UUID `json:"seId" db:"se_id"`
