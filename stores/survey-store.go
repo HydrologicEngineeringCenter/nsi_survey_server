@@ -67,6 +67,17 @@ func (ss *SurveyStore) GetSurveyMembers(surveyId uuid.UUID) (*[]models.SurveyMem
 	return &members, err
 }
 
+func (ss *SurveyStore) GetSurveyElements(surveyId uuid.UUID) (*[]models.SurveyElement, error) {
+	elements := []models.SurveyElement{}
+	err := ss.DS.Select().
+		DataSet(&surveyElementTable).
+		StatementKey("select_elements").
+		Params(surveyId).
+		Dest(&elements).
+		Fetch()
+	return &elements, err
+}
+
 func (ss *SurveyStore) GetSurvey(surveyId uuid.UUID) (models.Survey, error) {
 	survey := models.Survey{}
 	err := ss.DS.Select().
