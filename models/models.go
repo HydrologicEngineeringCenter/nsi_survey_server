@@ -105,7 +105,7 @@ type SurveyResult struct {
 
 func (sr SurveyResult) String() []string {
 	return ([]string{
-		strconv.Itoa(sr.SRID),
+		fmt.Sprintf(`"%s"`, sr.SRID),
 		fmt.Sprintf(`"%s"`, sr.UserID),
 		fmt.Sprintf(`"%s"`, sr.UserName),
 		strconv.FormatBool(sr.Completed),
