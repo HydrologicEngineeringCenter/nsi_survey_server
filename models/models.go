@@ -94,11 +94,11 @@ type SurveyStructure struct {
 }
 
 type SurveyResult struct {
-	SRID      int    `db:"sr_id" json:"srId"`
-	UserID    string `db:"user_id" json:"userId"`
-	UserName  string `db:"user_name" json:"userName"`
-	Completed bool   `db:"completed" json:"completed"`
-	IsControl bool   `db:"is_control" json:"isControl"`
+	SRID      uuid.UUID `db:"sr_id" json:"srId"`
+	UserID    string    `db:"user_id" json:"userId"`
+	UserName  string    `db:"user_name" json:"userName"`
+	Completed bool      `db:"completed" json:"completed"`
+	IsControl bool      `db:"is_control" json:"isControl"`
 
 	SurveyStructure
 }
