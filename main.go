@@ -53,7 +53,7 @@ func main() {
 	e.GET(urlPrefix+"/survey/:surveyid/elements", auth.AuthorizeRoute(surveyHandler.GetSurveyElements, ADMIN, SURVEY_OWNER))
 	e.POST(urlPrefix+"/survey/:surveyid/elements", auth.AuthorizeRoute(surveyHandler.InsertSurveyElements, ADMIN, SURVEY_OWNER))
 	e.POST(urlPrefix+"/survey/:surveyid/assignments", auth.AuthorizeRoute(surveyHandler.AddAssignments, ADMIN, SURVEY_OWNER))
-	e.GET(urlPrefix+"/survey/:surveyid/assignment", auth.AuthorizeRoute(surveyHandler.AssignSurveyElement, SURVEY_MEMBER))
+	e.GET(urlPrefix+"/survey/:surveyid/assignment", auth.AuthorizeRoute(surveyHandler.AssignSurveyElement, ADMIN, SURVEY_OWNER, SURVEY_MEMBER))
 	e.POST(urlPrefix+"/survey/assignment", auth.AuthorizeRoute(surveyHandler.SaveSurveyAssignment, ADMIN, SURVEY_OWNER, SURVEY_MEMBER))
 	e.GET(urlPrefix+"/users/search", auth.AuthorizeRoute(surveyHandler.SearchUsers, PUBLIC))
 	e.GET(urlPrefix+"/survey/valid", auth.AuthorizeRoute(surveyHandler.ValidSurveyName, PUBLIC))
