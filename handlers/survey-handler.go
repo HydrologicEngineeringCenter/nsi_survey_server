@@ -242,12 +242,12 @@ func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 
 	var structure models.SurveyStructure
 	var nextSurvey *uuid.UUID
-	if assignmentInfo.Completed == nil {
+	if assignmentInfo.Completed != nil { // get next assignment if completed
 		//the user does not have any uncompleted surveys assigned.  get a new one.
 		nextSurvey = assignmentInfo.NextSurveySEID
 		if assignmentInfo.NextControlOrder != nil && assignmentInfo.NextSurveyOrder != nil &&
 			*assignmentInfo.NextControlOrder < *assignmentInfo.NextSurveyOrder {
-			nextSurvey = &assignmentInfo.NextControlSEID
+			nextSurvey = assignmentInfo.NextControlSEID
 		}
 		if nextSurvey != nil {
 			saId, err := sh.store.AssignSurvey(userId, *nextSurvey)
@@ -255,6 +255,7 @@ func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 			if err != nil {
 				log.Printf("Error assigning Survey: %s", err)
 				pgerr := err.(pgx.PgError)
+				// postgres 23503 error code is foreign key violation
 				if pgerr.Code == "23503" && pgerr.TableName == "survey_assignment" {
 					return c.String(200, `{"result":"completed"}`) //this should only occur when we are out of surveys
 				}
@@ -265,7 +266,7 @@ func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 				return err
 			}
 		}
-	} else {
+	} else { // if current assignment is in complete, return it
 		structure, err = sh.store.GetStructure(*assignmentInfo.SEID, *assignmentInfo.SAID)
 		if err != nil {
 			return err

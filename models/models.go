@@ -47,7 +47,7 @@ type AssignmentInfo struct {
 	NextSurveyOrder  *int       `db:"next_survey_order"`
 	NextSurveySEID   *uuid.UUID `db:"next_survey_seid"`
 	NextControlOrder *int       `db:"next_control_order"`
-	NextControlSEID  uuid.UUID  `db:"next_control_seid"`
+	NextControlSEID  *uuid.UUID `db:"next_control_seid"`
 }
 
 type SurveyElement struct {
