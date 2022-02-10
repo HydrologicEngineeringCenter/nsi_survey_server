@@ -240,9 +240,21 @@ func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 		return err
 	}
 
+	// No potential assignment exists for survey
+	if assignmentInfo.SAID == nil &&
+		assignmentInfo.SEID == nil &&
+		assignmentInfo.Completed == nil &&
+		assignmentInfo.SurveyOrder == nil &&
+		assignmentInfo.NextSurveyOrder == nil &&
+		assignmentInfo.NextSurveySEID == nil &&
+		assignmentInfo.NextControlOrder == nil &&
+		assignmentInfo.NextControlSEID == nil {
+		return c.String(200, `{"result":"completed"}`)
+	}
+
 	var structure models.SurveyStructure
 	var nextSurvey *uuid.UUID
-	if assignmentInfo.Completed != nil { // get next assignment if completed
+	if *assignmentInfo.Completed { // get next assignment if completed
 		//the user does not have any uncompleted surveys assigned.  get a new one.
 		nextSurvey = assignmentInfo.NextSurveySEID
 		if assignmentInfo.NextControlOrder != nil && assignmentInfo.NextSurveyOrder != nil &&
