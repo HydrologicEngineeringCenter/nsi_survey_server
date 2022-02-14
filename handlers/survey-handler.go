@@ -254,7 +254,7 @@ func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 
 	var structure models.SurveyStructure
 	var nextSurvey *uuid.UUID
-	if *assignmentInfo.Completed { // get next assignment if completed
+	if *assignmentInfo.Completed { // get next assignment if current is completed
 		//the user does not have any uncompleted surveys assigned.  get a new one.
 		nextSurvey = assignmentInfo.NextSurveySEID
 		if assignmentInfo.NextControlOrder != nil && assignmentInfo.NextSurveyOrder != nil &&

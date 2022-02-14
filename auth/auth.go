@@ -25,9 +25,8 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 
 	surveyId, err := uuid.Parse(c.Param("surveyid"))
 
+	// TODO refactor this so it looks more logical
 	if err != nil { // even with no surveyid, there are handlers that can be invoked
-		// log.Printf("Invalid survey_id: %s\n", err)
-		// return false
 
 	} else { // surveyId exists in URI
 
@@ -36,11 +35,16 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 		if Contains(roles, ADMIN) && Contains_string(claims.Roles, "ADMIN") {
 			return true
 		}
+
+		var flagOwner, flagMember bool
 		if Contains(roles, SURVEY_OWNER) {
-			return store.IsOwner(surveyId, claims.Sub)
+			flagOwner = store.IsOwner(surveyId, claims.Sub)
 		}
 		if Contains(roles, SURVEY_MEMBER) {
-			return store.IsMember(surveyId, claims.Sub)
+			flagMember = store.IsMember(surveyId, claims.Sub)
+		}
+		if flagMember || flagOwner {
+			return true
 		}
 	}
 
