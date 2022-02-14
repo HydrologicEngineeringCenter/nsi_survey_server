@@ -24,18 +24,14 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 	})
 
 	surveyId, err := uuid.Parse(c.Param("surveyid"))
-
-	// TODO refactor this so it looks more logical
-	if err != nil { // even with no surveyid, there are handlers that can be invoked
-
-	} else { // surveyId exists in URI
-
+	if err == nil { // there is surveyId in url
 		c.Set("NSISURVEY", surveyId)
-
+		if Contains(roles, PUBLIC) {
+			return true
+		}
 		if Contains(roles, ADMIN) && Contains_string(claims.Roles, "ADMIN") {
 			return true
 		}
-
 		var flagOwner, flagMember bool
 		if Contains(roles, SURVEY_OWNER) {
 			flagOwner = store.IsOwner(surveyId, claims.Sub)
@@ -51,11 +47,9 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 	if Contains(roles, PUBLIC) {
 		return true
 	}
-
 	if Contains(roles, ADMIN) && Contains_string(claims.Roles, "ADMIN") {
 		return true
 	}
-
 	return false
 }
 
