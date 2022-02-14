@@ -290,7 +290,7 @@ func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 
 //Saves the survey assignment and returns an HTTP OK on success
 //
-//PRIVATE API restricted to the SURVEY_MEMBER role
+//PUBLIC API restricted to the ADMIN, SURVEY_OWNER, and SURVEY_MEMBER roles
 
 func (sh *SurveyHandler) SaveSurveyAssignment(c echo.Context) error {
 	s := models.SurveyStructure{}

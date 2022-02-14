@@ -24,7 +24,7 @@ func Appauth(c echo.Context, authstore interface{}, roles []int, claims JwtClaim
 	})
 
 	surveyId, err := uuid.Parse(c.Param("surveyid"))
-	if err == nil { // there is surveyId in url
+	if c.Param("surveyid") != "" && err == nil { // there is surveyId in url
 		c.Set("NSISURVEY", surveyId)
 		if Contains(roles, PUBLIC) {
 			return true
