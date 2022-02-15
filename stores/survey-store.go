@@ -135,6 +135,8 @@ func (ss *SurveyStore) RemoveMemberFromSurvey(memberId string, surveyId uuid.UUI
 func (ss SurveyStore) InsertSurveyElements(elements *[]models.SurveyElement) error {
 	err := ss.DS.Insert(&surveyElementTable).
 		Records(elements).
+		Batch(true).
+		BatchSize(len(*elements)).
 		Execute()
 
 	if err != nil {
