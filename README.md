@@ -9,12 +9,21 @@ setup auth public key in .devcontainer/pk.pem and env variables in .devcontainer
 
 Env variables:
 >PORT=
+>
 >DBUSER=
+>
 >DBPASS=
+>
 >DBNAME=
+>
 >DBHOST=host.docker.internal
+>
 >DBSTORE=pgx
+>
 >DBDRIVER=postgres
+>
 >DBSSLMODE=
+>
 >DBPORT=
+>
 >IPPK=.devcontainer/pk.pem
