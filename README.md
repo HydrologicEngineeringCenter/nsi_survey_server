@@ -16,7 +16,7 @@ Env variables:
     DBUSER=
     DBPASS=
     DBNAME=
-    DBHOST=host.docker.internal
+    DBHOST=
     DBSTORE=pgx
     DBDRIVER=postgres
     DBSSLMODE=
