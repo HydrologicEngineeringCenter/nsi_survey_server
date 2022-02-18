@@ -5,14 +5,14 @@ env GOOS=linux GOARCH=amd64 go build
 ### Dev environment
 
 The development env uses two bind mounts to connect the current local workspace and local microauth package to the container. To deploy development environment,
-setup auth public key in .devcontainer/pk.pem and env variables in .devcontainer/devcontainer.env and run:
+setup auth public key in pk.pem and link via IPPK env var. To connect to container:
 
     docker-compose -f deploy/dev/docker-compose.yaml up -d
     docker exec -it NSISERVER_DEV bash
 
 Env variables:
 
-    PORT=
+    PORT=3031
     DBUSER=
     DBPASS=
     DBNAME=
@@ -21,4 +21,4 @@ Env variables:
     DBDRIVER=postgres
     DBSSLMODE=
     DBPORT=
-    IPPK=.devcontainer/pk.pem
+    IPPK=
