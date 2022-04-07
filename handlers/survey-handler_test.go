@@ -12,11 +12,11 @@ import (
 
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
-	"github.com/USACE/microauth"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/usace/goquery"
+	"github.com/usace/microauth"
 )
 
 var newSurveyId string

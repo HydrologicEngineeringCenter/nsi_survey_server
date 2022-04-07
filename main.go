@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 
-	"github.com/USACE/microauth"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/usace/microauth"
 
 	. "github.com/HydrologicEngineeringCenter/nsi_survey_server/auth"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/config"
