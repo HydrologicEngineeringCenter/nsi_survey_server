@@ -2,25 +2,23 @@ package main
 
 import (
 	"log"
-	"net/http"
 
-	"github.com/USACE/microauth"
-	"github.com/apex/gateway"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/usace/microauth"
 
-	"github.com/HydrologicEngineeringCenter/nsi_survey_server/auth"
+	. "github.com/HydrologicEngineeringCenter/nsi_survey_server/auth"
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/config"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/handlers"
-	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/stores"
 )
 
-// Config holds all runtime configuration provided via environment variables
+const urlPrefix = "nsisapi"
 
 func main() {
-	var cfg models.Config
-	if err := envconfig.Process("ns", &cfg); err != nil {
+	var cfg config.Config
+	if err := envconfig.Process("", &cfg); err != nil {
 		log.Fatal(err.Error())
 	}
 	cfg.SkipJWT = true
@@ -30,33 +28,37 @@ func main() {
 		log.Printf("Unable to connect to database during startup: %s", err)
 	}
 
-	surveyHandler := handlers.CreateSurveyHandler(ss, cfg.SurveyEvent)
-	jwtAuth := microauth.Auth{
-		AuthMiddleware: auth.Appauth,
+	surveyHandler := handlers.CreateSurveyHandler(ss)
+	auth := microauth.Auth{
+		AuthRoute: Appauth,
+		Aud:       cfg.Aud,
+		Store:     ss,
 	}
-	jwtAuth.LoadVerificationKey(cfg.Ippk)
+	auth.LoadVerificationKey(cfg.Ippk)
 
 	e := echo.New()
 
-	e.Use(jwtAuth.AuthorizeMiddleware)
+	//e.Use(jwtAuth.AuthorizeMiddleware)
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	// Public Routes
-	e.GET("nsisapi/survey", surveyHandler.GetSurvey)
-	e.POST("nsisapi/survey", surveyHandler.SaveSurvey)
-	e.GET("nsisapi/reports/surveys/:eventID", surveyHandler.GetSurveyReport)
+	e.GET(urlPrefix+"/version", surveyHandler.Version)
+	e.GET(urlPrefix+"/surveys", auth.AuthorizeRoute(surveyHandler.GetSurveysForUser, PUBLIC))
+	e.POST(urlPrefix+"/survey", auth.AuthorizeRoute(surveyHandler.CreateNewSurvey, ADMIN, PUBLIC))
+	e.PUT(urlPrefix+"/survey/:surveyid", auth.AuthorizeRoute(surveyHandler.UpdateSurvey, ADMIN, SURVEY_OWNER))
+	e.GET(urlPrefix+"/survey/:surveyid/members", auth.AuthorizeRoute(surveyHandler.GetSurveyMembers, ADMIN, SURVEY_OWNER))
+	e.POST(urlPrefix+"/survey/:surveyid/member", auth.AuthorizeRoute(surveyHandler.UpsertSurveyMember, ADMIN, SURVEY_OWNER))
+	e.DELETE(urlPrefix+"/survey/member/:memberid", auth.AuthorizeRoute(surveyHandler.RemoveSurveyMember, ADMIN, SURVEY_OWNER))
+	e.DELETE(urlPrefix+"/survey/:surveyid/member/:memberid", auth.AuthorizeRoute(surveyHandler.RemoveMemberFromSurvey, ADMIN, SURVEY_OWNER))
+	e.GET(urlPrefix+"/survey/:surveyid/elements", auth.AuthorizeRoute(surveyHandler.GetSurveyElements, ADMIN, SURVEY_OWNER))
+	e.POST(urlPrefix+"/survey/:surveyid/elements", auth.AuthorizeRoute(surveyHandler.InsertSurveyElements, ADMIN, SURVEY_OWNER))
+	e.POST(urlPrefix+"/survey/:surveyid/assignments", auth.AuthorizeRoute(surveyHandler.AddAssignments, ADMIN, SURVEY_OWNER))
+	e.GET(urlPrefix+"/survey/:surveyid/assignment", auth.AuthorizeRoute(surveyHandler.AssignSurveyElement, ADMIN, SURVEY_OWNER, SURVEY_MEMBER))
+	e.POST(urlPrefix+"/survey/:surveyid/assignment", auth.AuthorizeRoute(surveyHandler.SaveSurveyAssignment, ADMIN, SURVEY_OWNER, SURVEY_MEMBER))
+	e.GET(urlPrefix+"/users/search", auth.AuthorizeRoute(surveyHandler.SearchUsers, PUBLIC))
+	e.GET(urlPrefix+"/survey/valid", auth.AuthorizeRoute(surveyHandler.ValidSurveyName, PUBLIC))
+	e.GET(urlPrefix+"/survey/:surveyid/report", auth.AuthorizeRoute(surveyHandler.GetSurveyReport, ADMIN, SURVEY_OWNER))
 
-	//new endpoints
-	// - create new survey
-	// - add list of survey elements
-	// - assign users to survey
+	e.Logger.Fatal(e.Start(":" + cfg.Port))
 
-	if cfg.LambdaContext {
-		log.Print("starting server; Running On AWS LAMBDA")
-		log.Fatal(gateway.ListenAndServe("localhost:3030", e))
-	} else {
-		log.Print("starting server on port 3031")
-		log.Fatal(http.ListenAndServe("0.0.0.0:3031", e))
-	}
 }
