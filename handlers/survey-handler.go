@@ -254,9 +254,10 @@ func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 
 	var structure models.SurveyStructure
 	var nextSurvey *uuid.UUID
-	if assignmentInfo.Completed == nil { // get next assignment if current is completed
+	if assignmentInfo.Completed == nil {
 		//the user does not have any uncompleted surveys assigned.  get a new one.
 		nextSurvey = assignmentInfo.NextSurveySEID
+		// control order is less than survey order
 		if assignmentInfo.NextControlOrder != nil && assignmentInfo.NextSurveyOrder != nil &&
 			*assignmentInfo.NextControlOrder < *assignmentInfo.NextSurveyOrder {
 			nextSurvey = assignmentInfo.NextControlSEID
@@ -278,7 +279,7 @@ func (sh *SurveyHandler) AssignSurveyElement(c echo.Context) error {
 				return err
 			}
 		}
-	} else { // if current assignment is in complete, return it
+	} else { // if current assignment is incomplete, return it
 		structure, err = sh.store.GetStructure(*assignmentInfo.SEID, *assignmentInfo.SAID)
 		if err != nil {
 			return err
