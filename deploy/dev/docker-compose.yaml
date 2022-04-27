@@ -9,10 +9,10 @@ services:
     ports:
       - 3031:3031
     volumes:
-      - .:/workspaces/nsi_survey_server
-      - ./../microauth:/workspaces/microauth
+      - ../../:/workspaces/nsi_survey_server
+      - ../../../microauth:/workspaces/microauth
     env_file:
-      - .devcontainer/devcontainer.env
+      - ../../.devcontainer/devcontainer.env
     working_dir: /workspaces/nsi_survey_server
     tty: true
     entrypoint: ["bash"]
