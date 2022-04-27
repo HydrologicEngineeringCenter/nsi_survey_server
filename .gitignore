@@ -19,3 +19,4 @@ nsi_survey_server
 .devcontainer/pk.pem
 *.server
 .vimspector.*
+.devcontainer/
