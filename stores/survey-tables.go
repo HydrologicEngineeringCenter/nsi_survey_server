@@ -1,6 +1,9 @@
 package stores
 
 import (
+	"fmt"
+
+	"github.com/HydrologicEngineeringCenter/nsi_survey_server/global"
 	"github.com/HydrologicEngineeringCenter/nsi_survey_server/models"
 	dq "github.com/usace/goquery"
 )
@@ -12,9 +15,9 @@ var surveyTable = dq.TableDataSet{
 		"selectById": `select * from survey where id=$1`,
 		"insert":     `insert into survey (title,description,active) values ($1,$2,$3) returning id`,
 		"update":     `update survey set title=$1,description=$2,active=$3 where id=$4`,
-		"nsi-survey": `select $2::uuid as sa_id, false as invalid_structure, false as no_street_view,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0.0 as num_story, 0.0 as sqft,found_type,
+		"nsi-survey": fmt.Sprintf(`select $2::uuid as sa_id, false as invalid_structure, false as no_street_view,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0.0 as num_story, 0.0 as sqft,found_type,
 						'' as rsmeans_type, '' as quality, '' as const_type, '' as garage, '' as roof_style
-						from nsi.nsi where fd_id=(select fd_id from survey_element where id=$1)`,
+						from %s.%s where fd_id=(select fd_id from survey_element where id=$1)`, global.DB_NSI_SCHEMA, global.DB_NSI_TABLENAME),
 		"survey": `select sa_id, fd_id,x,y,invalid_structure,no_street_view,cbfips,occtype,st_damcat,found_ht,num_story,sqft,
 					found_type,rsmeans_type,quality,const_type,garage,roof_style
 					from survey_result where sa_id=$1`,
@@ -66,7 +69,7 @@ var surveyAssignmentTable = dq.TableDataSet{
 		"updateAssignment": `update survey_assignment set completed='true' where id=$1`,
 		"assignSurvey":     `insert into survey_assignment (se_id,assigned_to) values ($1,$2) returning id`,
 		"assignmentInfo": `
-			select 
+			select
 				sa_id,
 				se_id,
 				completed,
@@ -74,48 +77,48 @@ var surveyAssignmentTable = dq.TableDataSet{
 				next_survey_order,
 				next_survey_seid,
 				next_control_order,
-				next_control_seid 
+				next_control_seid
 			from (
-				select 
+				select
 					t1.id as sa_id,
 					t1.se_id,
 					t1.completed,
-					t2.survey_order, 
-					null as next_survey_order, 
-					null as next_survey_seid, 
-					null as next_control_order, 
-					null as next_control_seid 
-				from survey_element t2 
-				left outer join survey_assignment t1 on t1.se_id=t2.id 
-				where assigned_to=$1 and t2.survey_id=$2 and completed='false' 
-				union 
-				select 
+					t2.survey_order,
+					null as next_survey_order,
+					null as next_survey_seid,
+					null as next_control_order,
+					null as next_control_seid
+				from survey_element t2
+				left outer join survey_assignment t1 on t1.se_id=t2.id
+				where assigned_to=$1 and t2.survey_id=$2 and completed='false'
+				union
+				select
 					sa_id,
 					se_id,
 					completed,
 					next_assignment.survey_order,
-					next_survey_order, 
-					se1.id as next_survey_seid, 
-					next_control_order, 
-					se2.id as next_control_seid 
+					next_survey_order,
+					se1.id as next_survey_seid,
+					next_control_order,
+					se2.id as next_control_seid
 				from (
-					select 
-						null::uuid as sa_id, 
-						null::uuid as se_id, 
+					select
+						null::uuid as sa_id,
+						null::uuid as se_id,
 						null::bool as completed,
-						null::integer as survey_order, 
+						null::integer as survey_order,
 						(
-							select case when ( 
+							select case when (
 								select max(t2.survey_order)
 								from survey_assignment t1
 								inner join survey_element t2 on t2.id=t1.se_id
 								where t2.survey_id=$2 and t2.is_control='false'
 							) is null then (
-								select min(survey_order) 
-								from survey_element 
+								select min(survey_order)
+								from survey_element
 								where survey_id=$2 and is_control='false'
 							) else (
-								select min(survey_order) 
+								select min(survey_order)
 								from survey_element where survey_order> (
 									select max(t2.survey_order)
 										from survey_assignment t1
@@ -123,13 +126,13 @@ var surveyAssignmentTable = dq.TableDataSet{
 										where t2.survey_id=$2 and t2.is_control='false'
 								) and is_control='false' and survey_id=$2
 							) end
-						) as next_survey_order, 
+						) as next_survey_order,
 						(
-							select min(t1.survey_order) 
+							select min(t1.survey_order)
 							from survey_element t1
 							left outer join (
-								select * 
-								from survey_assignment 
+								select *
+								from survey_assignment
 								where assigned_to=$1
 							) t2 on t1.id=t2.se_id
 							where assigned_to is null and is_control='true' and survey_id=$2
@@ -147,9 +150,9 @@ var surveyAssignmentTable = dq.TableDataSet{
 var resultTable = dq.TableDataSet{
 	Statements: map[string]string{
 
-		"nsi_survey": `select $2::uuid as sa_id, false as invalid_structure, false as no_street_view,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0 as num_story, 0.0 as sqft,found_type,
+		"nsi_survey": fmt.Sprintf(`select $2::uuid as sa_id, false as invalid_structure, false as no_street_view,fd_id,x,y,cbfips,occtype,st_damcat,found_ht,0 as num_story, 0.0 as sqft,found_type,
 						'' as rsmeans_type, '' as quality, '' as const_type, '' as garage, '' as roof_style
-						from nsi.nsi where fd_id=(select fd_id from survey_element where id=$1)`,
+						from %s.%s where fd_id=(select fd_id from survey_element where id=$1)`, global.DB_NSI_SCHEMA, global.DB_NSI_TABLENAME),
 
 		"upsertSurveyStructure": `insert into survey_result
 									(sa_id,fd_id,x,y,invalid_structure,no_street_view,cbfips,occtype,st_damcat,found_ht,num_story,sqft,found_type,rsmeans_type,quality,const_type,garage,roof_style)
