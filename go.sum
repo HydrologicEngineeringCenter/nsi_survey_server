@@ -204,8 +204,12 @@ github.com/usace/goquery v0.0.0-20210825130028-45f9bdbb50fa h1:8IuXkUSs044yiOtWC
 github.com/usace/goquery v0.0.0-20210825130028-45f9bdbb50fa/go.mod h1:GWnXaWk0EXQuP7Sf7kXPS++OUTx4A7HNziASE9nhF7o=
 github.com/usace/goquery v0.0.0-20210825225014-13e29b2eebf0 h1:qRgXy6F3ljJuaAAPUJZxGq44Cl/nIFYeaxqorPAS6zU=
 github.com/usace/goquery v0.0.0-20210825225014-13e29b2eebf0/go.mod h1:GWnXaWk0EXQuP7Sf7kXPS++OUTx4A7HNziASE9nhF7o=
+github.com/usace/goquery v0.0.0-20220818132611-0d34255b7441 h1:j7tx4s3bzUSIpOIBsdzfDhix/bSKJqn+7JaYy+80sXI=
+github.com/usace/goquery v0.0.0-20220818132611-0d34255b7441/go.mod h1:GWnXaWk0EXQuP7Sf7kXPS++OUTx4A7HNziASE9nhF7o=
 github.com/usace/microauth v0.0.0-20210910125645-8fcc3198fa2c h1:ffpX71MoBLX6pYY04Zh8FqzeyowJd17QjD9rZAdzuNQ=
 github.com/usace/microauth v0.0.0-20210910125645-8fcc3198fa2c/go.mod h1:ypP8izZcF0qiBg4hzc+GqD6feDR0zNbOuOJFt/9GJLo=
+github.com/usace/microauth v0.0.0-20220811193924-a536d112a436 h1:Bix7xKaZ2+OLAePU2WpcbDNH0hSxKghH2jy1rhvtEFM=
+github.com/usace/microauth v0.0.0-20220811193924-a536d112a436/go.mod h1:ypP8izZcF0qiBg4hzc+GqD6feDR0zNbOuOJFt/9GJLo=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasttemplate v1.0.1/go.mod h1:UQGH1tvbgY+Nz5t2n7tXsz52dQxojPUpymEIMZ47gx8=

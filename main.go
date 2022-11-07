@@ -34,7 +34,11 @@ func main() {
 		Aud:       cfg.Aud,
 		Store:     ss,
 	}
-	auth.LoadVerificationKey(cfg.Ippk)
+	auth.LoadVerificationKey(microauth.VerificationKeyOptions{
+		KeySource: microauth.KeyFile,
+		KeyVal:    cfg.Ippk,
+	},
+	)
 
 	e := echo.New()
 

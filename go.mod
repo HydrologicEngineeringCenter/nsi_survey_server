@@ -18,8 +18,8 @@ require (
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/lib/pq v1.10.2
 	github.com/stretchr/testify v1.7.0 // indirect
-	github.com/usace/goquery v0.0.0-20210825225014-13e29b2eebf0 // indirect
-	github.com/usace/microauth v0.0.0-20210910125645-8fcc3198fa2c // indirect
+	github.com/usace/goquery v0.0.0-20220818132611-0d34255b7441
+	github.com/usace/microauth v0.0.0-20220811193924-a536d112a436
 	golang.org/x/tools v0.1.5 // indirect
 // indirect
 )

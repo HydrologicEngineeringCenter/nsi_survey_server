@@ -91,7 +91,7 @@ func (ss *SurveyStore) GetSurvey(surveyId uuid.UUID) (models.Survey, error) {
 
 func (ss *SurveyStore) CreateNewSurvey(survey models.Survey, userId string) (uuid.UUID, error) {
 	var surveyId uuid.UUID
-	err := goquery.Transaction(ss.DS, func(tx goquery.Tx) {
+	err := ss.DS.Transaction(func(tx goquery.Tx) {
 		err := ss.DS.Select().
 			DataSet(&surveyTable).
 			Tx(&tx).
@@ -206,7 +206,7 @@ func (ss *SurveyStore) GetStructure(seId uuid.UUID, saId uuid.UUID) (models.Surv
 	if err != nil {
 		if err.Error() == NoResults {
 			//no existing survey result, get survey data from nsi
-			err := ss.DS.Select(surveyTable.Statements["nsi-survey"]).
+			err = ss.DS.Select(surveyTable.Statements["nsi-survey"]).
 				Params(seId, saId).
 				Dest(&s).
 				Fetch()
@@ -226,7 +226,7 @@ func (ss *SurveyStore) GetStructure(seId uuid.UUID, saId uuid.UUID) (models.Surv
 }
 
 func (ss *SurveyStore) SaveSurvey(survey *models.SurveyStructure) error {
-	err := goquery.Transaction(ss.DS, func(tx goquery.Tx) {
+	err := ss.DS.Transaction(func(tx goquery.Tx) {
 		pgtx := tx.PgxTx()
 		_, txerr := pgtx.Exec(context.Background(), resultTable.Statements["upsertSurveyStructure"],
 			survey.SAID, survey.FDID, survey.X, survey.Y, survey.InvalidStructure, survey.NoStreetView,

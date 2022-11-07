@@ -22,3 +22,11 @@ Env variables:
     DBSSLMODE=
     DBPORT=
     IPPK=
+
+To override using an .env file:
+
+    export $(grep -v '^#' .env | xargs)
+
+To forward local env to DB via an ssh tunnel:
+
+    ssh -i ./<private key> -NL <localport>:<db server host>:<db server port>> <tunnel username>@<tunnel host>
