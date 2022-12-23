@@ -25,7 +25,7 @@ create table survey_member(
     is_owner bool not null default false,
     UNIQUE(survey_id,user_id),
     CONSTRAINT fk_sm_user
-        FOREIGN KEY(user_id) 
+        FOREIGN KEY(user_id)
             REFERENCES users(user_id)
 );
 
@@ -35,10 +35,10 @@ create table survey_assignment (
     completed boolean DEFAULT false,
     assigned_to varchar(50),
     CONSTRAINT fk_survey_element
-        FOREIGN KEY(se_id) 
+        FOREIGN KEY(se_id)
             REFERENCES survey_element(id),
     CONSTRAINT fk_user
-        FOREIGN KEY(assigned_to) 
+        FOREIGN KEY(assigned_to)
             REFERENCES users(user_id)
 );
 
@@ -54,7 +54,7 @@ create table survey_result(
     occtype varchar(9),
     st_damcat varchar(3),
     found_ht double precision,
-    num_story integer,
+    num_story double precision,
     sqft double precision,
     found_type varchar(4),
     rsmeans_type varchar(50),
@@ -64,9 +64,9 @@ create table survey_result(
     roof_style varchar(50),
 
     CONSTRAINT fk_survey_assignment
-        FOREIGN KEY(sa_id) 
+        FOREIGN KEY(sa_id)
             REFERENCES survey_assignment(id)
-    
+
 );
 
 CREATE UNIQUE INDEX idx_sr_said ON survey_result (sa_id);
