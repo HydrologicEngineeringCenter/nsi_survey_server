@@ -83,7 +83,7 @@ type SurveyStructure struct {
 	OccupancyType    string    `db:"occtype" json:"occupancyType"`
 	Damcat           string    `db:"st_damcat" json:"damcat"`
 	FoundHt          float64   `db:"found_ht" json:"found_ht"`
-	Stories          int       `db:"num_story" json:"stories"`
+	Stories          float64   `db:"num_story" json:"stories"`
 	SqFt             float64   `db:"sqft" json:"sq_ft"`
 	FoundType        string    `db:"found_type" json:"found_type"`
 	RsmeansType      string    `db:"rsmeans_type" json:"rsmeans_type"`
@@ -120,7 +120,7 @@ func (sr SurveyResult) String() []string {
 		fmt.Sprintf(`"%s"`, sr.OccupancyType),
 		fmt.Sprintf(`"%s"`, sr.Damcat),
 		strconv.FormatFloat(sr.FoundHt, 'f', 4, 64),
-		strconv.Itoa(sr.Stories),
+		strconv.FormatFloat(sr.Stories, 'f', 4, 64),
 		strconv.FormatFloat(sr.SqFt, 'f', 4, 64),
 		fmt.Sprintf(`"%s"`, sr.FoundType),
 		fmt.Sprintf(`"%s"`, sr.RsmeansType),
